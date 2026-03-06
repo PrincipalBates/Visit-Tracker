@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Florence Sawyer — Visit & Interaction Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e; --ink-light: #4a4a6a; --cream: #f8f6f0; --cream-dark: #ede9df;
+    --accent: #c84b31; --accent-light: #f0e8e5; --gold: #d4a017; --gold-light: #fdf5e0;
+    --green: #2d6a4f; --green-light: #e8f4ee; --blue: #2040a0; --blue-light: #e8f0ff;
+    --border: #d0ccc0; --shadow: 0 2px 16px rgba(26,26,46,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+  header { background: var(--ink); color: var(--cream); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--accent); }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 1.45rem; }
+  header .subtitle { font-size: 0.7rem; color: #a0a0c0; margin-top: 2px; font-weight: 300; letter-spacing: 0.08em; text-transform: uppercase; }
+  .header-stats { display: flex; gap: 22px; text-align: right; }
+  .header-stat-val { font-family: 'DM Serif Display', serif; font-size: 1.35rem; color: var(--gold); }
+  .header-stat-label { font-size: 0.66rem; color: #a0a0c0; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .app { display: grid; grid-template-columns: 336px 1fr; min-height: calc(100vh - 64px); }
+
+  .sidebar { background: white; border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; }
+
+  .mode-toggle { display: flex; margin-bottom: 18px; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mode-btn { flex: 1; padding: 9px 4px; border: none; background: white; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--ink-light); cursor: pointer; transition: all 0.15s; }
+  .mode-btn.active { background: var(--ink); color: white; font-weight: 600; }
+  .mode-btn:first-child { border-right: 1px solid var(--border); }
+
+  .section-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-light); font-weight: 600; margin-bottom: 11px; padding-bottom: 7px; border-bottom: 1px solid var(--cream-dark); }
+  .form-group { margin-bottom: 13px; }
+  label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--ink-light); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  input, select, textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 6px; padding: 8px 10px; font-family: 'DM Sans', sans-serif; font-size: 0.86rem; color: var(--ink); background: var(--cream); transition: border-color 0.15s; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); background: white; }
+  textarea { resize: vertical; min-height: 72px; }
+
+  .obs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 5px; }
+  .obs-item { background: var(--cream); border: 1.5px solid var(--border); border-radius: 6px; padding: 7px 9px; }
+  .obs-item label { font-size: 0.69rem; font-weight: 600; color: var(--ink); text-transform: none; letter-spacing: 0; margin-bottom: 3px; }
+  .rating-row { display: flex; gap: 3px; margin-top: 3px; }
+  .rating-btn { flex: 1; border: 1.5px solid var(--border); background: white; border-radius: 4px; padding: 3px 0; font-size: 0.67rem; cursor: pointer; transition: all 0.12s; font-family: 'DM Sans', sans-serif; color: var(--ink-light); }
+  .rating-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .rating-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+
+  .type-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+  .type-pill { padding: 5px 11px; border: 1.5px solid var(--border); border-radius: 20px; font-size: 0.74rem; cursor: pointer; background: white; color: var(--ink-light); font-family: 'DM Sans', sans-serif; transition: all 0.12s; }
+  .type-pill:hover { border-color: var(--blue); color: var(--blue); }
+  .type-pill.active { background: var(--blue); border-color: var(--blue); color: white; font-weight: 600; }
+
+  .btn-submit { width: 100%; color: white; border: none; border-radius: 8px; padding: 11px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; letter-spacing: 0.03em; transition: background 0.15s, transform 0.1s; margin-top: 6px; }
+  .btn-visit { background: var(--accent); }
+  .btn-visit:hover { background: #a83a22; transform: translateY(-1px); }
+  .btn-interaction { background: var(--blue); }
+  .btn-interaction:hover { background: #162d7a; transform: translateY(-1px); }
+  .btn-submit:active { transform: translateY(0); }
+
+  .roster-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 11px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--cream); margin-bottom: 8px; }
+  .roster-zone:hover, .roster-zone.drag-over { border-color: var(--accent); background: var(--accent-light); }
+  .roster-zone .upload-icon { font-size: 1.2rem; margin-bottom: 2px; }
+  .roster-zone p { font-size: 0.74rem; color: var(--ink-light); }
+  .roster-zone strong { color: var(--accent); }
+  .roster-status { font-size: 0.73rem; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; display: none; }
+  .roster-status.success { background: var(--green-light); color: var(--green); display: block; }
+  .roster-status.error { background: var(--accent-light); color: var(--accent); display: block; }
+  .roster-clear { font-size: 0.69rem; color: var(--ink-light); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; cursor: pointer; margin-left: 5px; font-family: 'DM Sans', sans-serif; }
+  .roster-clear:hover { color: var(--accent); border-color: var(--accent); }
+
+  .main { padding: 22px 26px; overflow-y: auto; }
+
+  .tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+  .tab { padding: 8px 16px; border: none; background: none; font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 500; color: var(--ink-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab.active.blue-tab { color: var(--blue); border-bottom-color: var(--blue); }
+  .tab:hover:not(.active) { color: var(--ink); }
+
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-bar input, .filter-bar select { flex: 1; min-width: 128px; max-width: 206px; padding: 7px 10px; font-size: 0.8rem; }
+
+  .visits-list { display: flex; flex-direction: column; gap: 10px; }
+  .visit-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 17px; transition: box-shadow 0.15s; position: relative; }
+  .visit-card:hover { box-shadow: var(--shadow); }
+  .visit-card.interaction-card { border-left: 3px solid var(--blue); }
+  .visit-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+  .visit-teacher { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: var(--ink); }
+  .visit-meta { font-size: 0.72rem; color: var(--ink-light); margin-top: 2px; }
+  .visit-date-badge { font-size: 0.69rem; background: var(--ink); color: var(--cream); padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .interaction-date-badge { background: var(--blue) !important; }
+  .visit-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 7px; }
+  .tag { font-size: 0.66rem; padding: 3px 8px; border-radius: 20px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tag-lt { background: #fff3e0; color: #b26a00; }
+  .tag-se { background: var(--green-light); color: var(--green); }
+  .tag-is { background: var(--blue-light); color: var(--blue); }
+  .tag-ce { background: var(--accent-light); color: var(--accent); }
+  .tag-type { background: var(--blue-light); color: var(--blue); }
+  .tag-context { background: var(--gold-light); color: #7a5a00; }
+  .visit-notes { font-size: 0.8rem; color: var(--ink-light); line-height: 1.54; border-top: 1px solid var(--cream-dark); padding-top: 8px; margin-top: 4px; }
+  .delete-btn { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 0.69rem; color: #ccc; cursor: pointer; padding: 2px 5px; border-radius: 4px; transition: all 0.12s; }
+  .delete-btn:hover { background: var(--accent-light); color: var(--accent); }
+
+  .teacher-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(186px, 1fr)); gap: 10px; }
+  .teacher-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 13px; cursor: pointer; transition: all 0.15s; }
+  .teacher-card:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+  .teacher-name { font-family: 'DM Serif Display', serif; font-size: 0.94rem; margin-bottom: 3px; }
+  .teacher-info { font-size: 0.71rem; color: var(--ink-light); margin-bottom: 7px; }
+  .visit-count-bar { height: 4px; background: var(--cream-dark); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+  .visit-count-fill { height: 100%; background: var(--green); border-radius: 2px; }
+  .visit-count-fill.low { background: var(--accent); }
+  .visit-count-fill.mid { background: var(--gold); }
+  .last-visit { font-size: 0.67rem; color: var(--ink-light); }
+
+  .patterns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pattern-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 17px; }
+  .pattern-card h3 { font-family: 'DM Serif Display', serif; font-size: 0.98rem; margin-bottom: 11px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .bar-label { font-size: 0.74rem; width: 116px; color: var(--ink-light); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-wrap { flex: 1; height: 7px; background: var(--cream-dark); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-val { font-size: 0.71rem; font-weight: 600; color: var(--ink); width: 22px; text-align: right; }
+  .overdue-list { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; }
+  .overdue-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--accent-light); border-radius: 6px; font-size: 0.77rem; }
+  .overdue-days { color: var(--accent); font-weight: 600; font-size: 0.69rem; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--ink-light); }
+  .empty-state .icon { font-size: 2rem; margin-bottom: 7px; }
+  .empty-state p { font-size: 0.84rem; }
+  .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: white; padding: 8px 18px; border-radius: 30px; font-size: 0.79rem; opacity: 0; pointer-events: none; transition: all 0.3s; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .back-btn { border: 1px solid var(--border); background: white; border-radius: 6px; padding: 5px 10px; font-size: 0.77rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.12s; }
+  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .section-sub { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-light); margin-bottom: 9px; font-weight: 600; }
+  .section-sub.blue { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📋 Florence Sawyer School</h1>
+    <div class="subtitle">Visit &amp; Interaction Tracker · 2024–25</div>
+  </div>
+  <div class="header-stats">
+    <div><div class="header-stat-val" id="stat-total">0</div><div class="header-stat-label">Visits</div></div>
+    <div><div class="header-stat-val" id="stat-interactions">0</div><div class="header-stat-label">Interactions</div></div>
+    <div><div class="header-stat-val" id="stat-visited">0</div><div class="header-stat-label">Staff Visited</div></div>
+    <div><div class="header-stat-val" id="stat-week">0</div><div class="header-stat-label">This Week</div></div>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-visit-btn" onclick="setMode('visit')">🏫 Classroom Visit</button>
+      <button class="mode-btn" id="mode-interaction-btn" onclick="setMode('interaction')">💬 Interaction</button>
+    </div>
+
+    <!-- ROSTER -->
+    <div id="roster-section" style="margin-bottom:16px;">
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Staff Roster</span>
+        <span id="roster-count-badge" style="display:none;font-size:0.66rem;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;text-transform:none;letter-spacing:0;"></span>
+      </div>
+      <div class="roster-zone" id="roster-zone" onclick="document.getElementById('roster-file').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleRosterDrop(event)">
+        <div class="upload-icon">📂</div>
+        <p><strong>Upload updated roster</strong> CSV or Excel</p>
+      </div>
+      <input type="file" id="roster-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRosterFile(this.files[0])">
+      <div class="roster-status" id="roster-status"></div>
+    </div>
+
+    <!-- VISIT FORM -->
+    <div id="form-visit">
+      <div class="section-label">Log a Classroom Visit</div>
+      <div class="form-group">
+        <label>Teacher</label>
+        <input type="text" id="f-teacher" placeholder="Start typing a name…" list="staff-datalist" autocomplete="off">
+        <datalist id="staff-datalist"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Room / Location</label>
+        <input type="text" id="f-room" placeholder="e.g. Room 204">
+      </div>
+      <div class="form-group">
+        <label>Date &amp; Time</label>
+        <input type="datetime-local" id="f-datetime">
+      </div>
+      <div class="form-group">
+        <label>Grade Level</label>
+        <select id="f-grade">
+          <option value="">Select grade</option>
+          <option>Preschool</option><option>Kindergarten</option>
+          <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
+          <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+          <option>Grade 7</option><option>Grade 8</option><option>Multi-grade</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Content Area</label>
+        <select id="f-subject">
+          <option value="">Select subject</option>
+          <option>ELA / Reading</option><option>Math</option><option>Science</option>
+          <option>Social Studies</option><option>Writing</option><option>Special Education</option>
+          <option>Counseling</option><option>Physical Education</option><option>Art</option>
+          <option>Music</option><option>Health</option><option>Engineering</option>
+          <option>Library/Media</option><option>Literacy</option><option>ELL/ESL</option>
+          <option>Specials</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <div class="section-label" style="margin-bottom:9px;">Observation Ratings</div>
+        <div class="obs-grid">
+          <div class="obs-item"><label>Learning Target Posted</label><div class="rating-row" data-field="lt"><button class="rating-btn" data-val="Yes">Yes</button><button class="rating-btn" data-val="Partial">Part</button><button class="rating-btn" data-val="No">No</button></div></div>
+          <div class="obs-item"><label>Student Engagement</label><div class="rating-row" data-field="se"><button class="rating-btn" data-val="High">High</button><button class="rating-btn" data-val="Mid">Mid</button><button class="rating-btn" data-val="Low">Low</button></div></div>
+          <div class="obs-item"><label>Instructional Strategy</label><div class="rating-row" data-field="is"><button class="rating-btn" data-val="Strong">Strong</button><button class="rating-btn" data-val="Developing">Dev</button><button class="rating-btn" data-val="Needs Support">NS</button></div></div>
+          <div class="obs-item"><label>Classroom Environment</label><div class="rating-row" data-field="ce"><button class="rating-btn" data-val="Strong">Strong</button><button class="rating-btn" data-val="Developing">Dev</button><button class="rating-btn" data-val="Needs Support">NS</button></div></div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Observation Notes</label>
+        <textarea id="f-notes" placeholder="What did you see? What stood out? Any follow-up?"></textarea>
+      </div>
+      <button class="btn-submit btn-visit" onclick="logVisit()">+ Log This Visit</button>
+    </div>
+
+    <!-- INTERACTION FORM -->
+    <div id="form-interaction" style="display:none;">
+      <div class="section-label">Log an Interaction</div>
+      <div class="form-group">
+        <label>Staff Member</label>
+        <input type="text" id="i-person" placeholder="Start typing a name…" list="staff-datalist" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Date &amp; Time</label>
+        <input type="datetime-local" id="i-datetime">
+      </div>
+      <div class="form-group">
+        <label>Type of Interaction</label>
+        <div class="type-pills" id="type-pills">
+          <button class="type-pill" data-val="Check-in">☀️ Check-in</button>
+          <button class="type-pill" data-val="Hallway / Informal">👋 Hallway</button>
+          <button class="type-pill" data-val="1:1 Meeting">🗓 1:1 Meeting</button>
+          <button class="type-pill" data-val="Problem-solving">🔧 Problem-solving</button>
+          <button class="type-pill" data-val="Recognition">🌟 Recognition</button>
+          <button class="type-pill" data-val="Family concern">👪 Family concern</button>
+          <button class="type-pill" data-val="Other">💬 Other</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Context / Location</label>
+        <input type="text" id="i-context" placeholder="e.g. Main office, cafeteria, hallway…">
+      </div>
+      <div class="form-group">
+        <label>Notes / Follow-up</label>
+        <textarea id="i-notes" placeholder="What was discussed? Any action needed?"></textarea>
+      </div>
+      <button class="btn-submit btn-interaction" onclick="logInteraction()">+ Log This Interaction</button>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <div class="main">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('visits',this)">All Visits</button>
+      <button class="tab" onclick="switchTab('interactions',this)">Interactions</button>
+      <button class="tab" onclick="switchTab('staff',this)">By Staff</button>
+      <button class="tab" onclick="switchTab('patterns',this)">Patterns</button>
+    </div>
+
+    <div id="tab-visits">
+      <div class="filter-bar">
+        <input type="text" id="search-visits" placeholder="🔍  Search teacher, notes…" oninput="renderVisits()">
+        <select id="filter-grade" onchange="renderVisits()">
+          <option value="">All Grades</option>
+          <option>Preschool</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+        </select>
+        <select id="filter-subject" onchange="renderVisits()">
+          <option value="">All Subjects</option>
+          <option>ELA / Reading</option><option>Math</option><option>Science</option><option>Social Studies</option><option>Special Education</option><option>Counseling</option><option>Physical Education</option><option>Art</option><option>Music</option><option>Engineering</option><option>Literacy</option><option>ELL/ESL</option>
+        </select>
+      </div>
+      <div class="visits-list" id="visits-list"></div>
+    </div>
+
+    <div id="tab-interactions" style="display:none;">
+      <div class="filter-bar">
+        <input type="text" id="search-interactions" placeholder="🔍  Search staff, notes…" oninput="renderInteractions()">
+        <select id="filter-itype" onchange="renderInteractions()">
+          <option value="">All Types</option>
+          <option>Check-in</option><option>Hallway / Informal</option><option>1:1 Meeting</option><option>Problem-solving</option><option>Recognition</option><option>Family concern</option><option>Other</option>
+        </select>
+      </div>
+      <div class="visits-list" id="interactions-list"></div>
+    </div>
+
+    <div id="tab-staff" style="display:none;">
+      <div id="staff-list-view"></div>
+    </div>
+
+    <div id="tab-patterns" style="display:none;">
+      <div class="patterns-grid" id="patterns-content"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BUILT_IN_ROSTER = [{"name":"Kelsey Benoit","grade":"Preschool","subject":"Preschool"},{"name":"Anamaria Massucci","grade":"Preschool","subject":"Preschool"},{"name":"Lauren Inman","grade":"Grade 8","subject":"English Language Arts"},{"name":"Sean Flynn","grade":"Grade 5","subject":"Math & Science"},{"name":"Madison Pawela","grade":"Grade 7","subject":"Math"},{"name":"Kayla Moses","grade":"Grade 5","subject":"Math & Science"},{"name":"Elizabeth Smith","grade":"Grade 8","subject":"Math"},{"name":"Caleb Rawlinson","grade":"Grades 6-8","subject":"Music"},{"name":"Jessica Strade","grade":"Grades 6-8","subject":"Spanish"},{"name":"Chris Mazara","grade":"Grades 6-8","subject":"Art"},{"name":"Jordan Seavey","grade":"Grade 7","subject":"English Language Arts"},{"name":"Karyn Sydow","grade":"Grades 3-5","subject":"Counseling"},{"name":"Elizabeth Miller","grade":"Grade 7","subject":"Science"},{"name":"Gary Kozloski","grade":"Grade 6","subject":"Social Studies"},{"name":"Kristen Sullivan","grade":"Grade 6","subject":"English Language Arts"},{"name":"Lance Johnson","grade":"Grade 6","subject":"Math"},{"name":"Mark Schulze","grade":"Grades 6-8","subject":"Dean of Students"},{"name":"Michael Breslau","grade":"Grade 7","subject":"Social Studies"},{"name":"Michael McCutcheon","grade":"Grades K-8","subject":"Physical Education"},{"name":"Robert Anderson","grade":"Grade 6","subject":"Science"},{"name":"Corey Brownell","grade":"Grade 8","subject":"Special Education"},{"name":"Daniel Towne","grade":"Grades 6-8","subject":"Special Education"},{"name":"Hannah Olshan","grade":"Grade 8","subject":"Science"},{"name":"Heidi Kuchenbaur","grade":"Grade 6","subject":"Special Education"},{"name":"Michele Kelly","grade":"Grade 7","subject":"Special Education"},{"name":"Nicole Johnson","grade":"Grades 6-8","subject":"Counseling"},{"name":"Stephanie Williams","grade":"Grades 6-8","subject":"Counseling"},{"name":"Laura Pagington","grade":"Grade 8","subject":"Social Studies"},{"name":"Stephanie Boyle","grade":"K","subject":"Elementary education"},{"name":"Iva Sofronova","grade":"K","subject":"Elementary education"},{"name":"Caitlin Murray","grade":"K","subject":"Elementary education"},{"name":"Stephanie Barbosa","grade":"K","subject":"Elementary education"},{"name":"Lori DiPrima","grade":"1","subject":"Elementary education"},{"name":"Julia Chisholm","grade":"1","subject":"Elementary education"},{"name":"Jennifer Hubacz","grade":"1","subject":"Elementary education"},{"name":"Patrice Heffernan","grade":"1","subject":"Elementary education"},{"name":"Maura Feely","grade":"2","subject":"Elementary education"},{"name":"Carolyn Pokorney","grade":"2","subject":"Elementary education"},{"name":"Julie Aisenberg","grade":"2","subject":"Elementary education"},{"name":"Jessica Gilchrest","grade":"3","subject":"Elementary education"},{"name":"Sandy Bowles","grade":"3","subject":"Elementary education"},{"name":"Cindy Finan","grade":"3","subject":"Elementary education"},{"name":"Lori Troest","grade":"3","subject":"Elementary education"},{"name":"Jennifer Sigismondo","grade":"4","subject":"Elementary education"},{"name":"Linda Gothie","grade":"4","subject":"Elementary education"},{"name":"Melissa Walsh","grade":"4","subject":"Elementary education"},{"name":"Pam Carpenter","grade":"4","subject":"Elementary education"},{"name":"Meredith Renda","grade":"Grades K-5","subject":"Instructional Technology"},{"name":"Gregg Newton","grade":"Grades K-5","subject":"Physical Education"},{"name":"Jayne Richards","grade":"Grades K-5","subject":"Health"},{"name":"Mary Kate Winn","grade":"Grades 6-8","subject":"Health"},{"name":"Alissa Frederick","grade":"Grades K-5","subject":"Music, Vocal"},{"name":"Liz Scudiere","grade":"Grades K-5","subject":"Art"},{"name":"Neil Wilkins","grade":"Grades 6-8","subject":"Engineering"},{"name":"Mike Caligiuri","grade":"Grades K-5","subject":"Library/Media"},{"name":"Katie Salois","grade":"Grades K-5","subject":"Literacy"},{"name":"Liz West","grade":"Grades K-5","subject":"Literacy"},{"name":"Emily Richardi","grade":"Grades K-5","subject":"Literacy"},{"name":"Karen Suffin","grade":"Grades K-2","subject":"Literacy"},{"name":"Erin Walker","grade":"Grades K-2","subject":"Literacy"},{"name":"Kate Robinson","grade":"Grades K-2","subject":"Literacy"},{"name":"Kristin Lambert","grade":"Grades K-8","subject":"ELL/ESL"},{"name":"Emily Vinci","grade":"Grades K-5","subject":"Special Education"},{"name":"Kristin Diggins","grade":"Grades K-5","subject":"Special Education"},{"name":"Karen Fitzpatrick","grade":"Grades K-5","subject":"Special Education"},{"name":"Casey Taillon","grade":"Grades K-5","subject":"Special Education"},{"name":"Jane Barwick","grade":"Grades K-1","subject":"Special Education"},{"name":"Rebecca Charpentier","grade":"Grades 2-3","subject":"Special Education"},{"name":"Alicia Madden","grade":"Grade 2 and Grade 4","subject":"Special Education"},{"name":"Diane Kirby-LaChance","grade":"Grade 2 and Grade 4","subject":"Special Education"},{"name":"Kelly Davis","grade":"Grades K-8","subject":"BCBA"},{"name":"Audrey Ashe","grade":"Grades PK-2","subject":"Counseling"},{"name":"Evelyn Cubero","grade":"Grades K-5","subject":"Counseling"},{"name":"Stacy Southard","grade":"Grades K-5","subject":"Special Education"},{"name":"Nichole Alarie","grade":"Grade 1","subject":"Special Education"},{"name":"Brionni Spinazola","grade":"Grades K-5","subject":"Special Education"},{"name":"Emersyn Forde","grade":"Grade 2","subject":"Special Education"},{"name":"Kate Burke","grade":"Grades 6-8","subject":"Special Education"},{"name":"Jackie Plesca","grade":"Grades 6-8","subject":"Special Education"},{"name":"Chandra Ferraro","grade":"Grades PK-8","subject":"Administration"},{"name":"Lisa Cantin","grade":"Grades PK-8","subject":"Administration"},{"name":"Jen Dutile","grade":"","subject":"Administration"},{"name":"Kim Laster","grade":"","subject":"Administration"},{"name":"Karin Frostholm","grade":"","subject":"Nursing"},{"name":"Rebecca Carle","grade":"","subject":"Nursing"},{"name":"Jessica Davis","grade":"","subject":"Preschool"},{"name":"Angela Braaten","grade":"","subject":"Preschool"},{"name":"Emily Daelhousen","grade":"","subject":"Preschool"},{"name":"Dulce Hidalgo","grade":"","subject":"Elementary Education"},{"name":"Barbara Robichaud","grade":"","subject":"Elementary Education"},{"name":"Jake Wardwell","grade":"","subject":"Elementary Education"},{"name":"Colinda Samarjian","grade":"","subject":"Elementary Education"},{"name":"Sadia Afrin","grade":"","subject":"Elementary Education"},{"name":"Kelly Salloux","grade":"","subject":"Special Education"},{"name":"Cameryn LeShane","grade":"","subject":"Special Education"},{"name":"Georgia Mulvey","grade":"","subject":"Special Education"},{"name":"Crystal Sette","grade":"","subject":"Special Education"},{"name":"Nancy Lento","grade":"","subject":"Special Education"},{"name":"Steve Salka","grade":"","subject":"Special Education"},{"name":"Joan Bates","grade":"","subject":"Special Education"},{"name":"Stacia Downey","grade":"","subject":"Special Education"},{"name":"Kim Storey","grade":"","subject":"Special Education"},{"name":"Sandy Pagoaga","grade":"","subject":"Special Education"},{"name":"Jen Ssonko","grade":"","subject":"Special Education"},{"name":"Bethany Joinville","grade":"","subject":"Special Education"},{"name":"James Majok","grade":"","subject":"Facilities"},{"name":"Karen McNamara","grade":"","subject":"Facilities"},{"name":"Chris Roche","grade":"","subject":"Facilities"},{"name":"Paul Terra","grade":"","subject":"Facilities"},{"name":"Miguel Abreu","grade":"","subject":"Facilities"},{"name":"Jonathan Pino","grade":"","subject":"Facilities"},{"name":"Jennifer McGrath","grade":"","subject":"Nutrition"},{"name":"Monique LeBlanc","grade":"","subject":"Nutrition"},{"name":"Sandie Hawkins","grade":"","subject":"Nutrition"},{"name":"Shelly Herbst","grade":"","subject":"Nutrition"},{"name":"Margaret Tindall","grade":"","subject":"Nutrition"},{"name":"Claudia Pongratz","grade":"","subject":"Nutrition"},{"name":"Ed Pannini","grade":"","subject":"Nutrition"},{"name":"Michael Ellam","grade":"","subject":"Extended Learning"}];
+
+let visits = JSON.parse(localStorage.getItem('visits') || '[]');
+let interactions = JSON.parse(localStorage.getItem('interactions') || '[]');
+let roster = JSON.parse(localStorage.getItem('roster') || 'null');
+if (!roster) { roster = BUILT_IN_ROSTER; localStorage.setItem('roster', JSON.stringify(roster)); }
+
+let ratings = { lt:null, se:null, is:null, ce:null };
+let selectedType = null;
+
+// Init datetimes
+document.getElementById('f-datetime').value = new Date().toISOString().slice(0,16);
+document.getElementById('i-datetime').value = new Date().toISOString().slice(0,16);
+
+// Rating buttons
+document.querySelectorAll('.rating-row').forEach(row => {
+  const field = row.dataset.field;
+  row.querySelectorAll('.rating-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      row.querySelectorAll('.rating-btn').forEach(b => b.className = 'rating-btn');
+      btn.classList.add('active');
+      ratings[field] = btn.dataset.val;
+    });
+  });
+});
+
+// Interaction type pills
+document.querySelectorAll('.type-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedType = pill.dataset.val;
+  });
+});
+
+// Auto-fill from roster
+document.getElementById('f-teacher').addEventListener('change', function() {
+  const m = roster.find(r => r.name.toLowerCase().trim() === this.value.toLowerCase().trim());
+  if (m) {
+    if (m.grade) document.getElementById('f-grade').value = m.grade;
+    if (m.subject) document.getElementById('f-subject').value = m.subject;
+  }
+});
+
+// Mode
+function setMode(mode) {
+  document.getElementById('form-visit').style.display = mode === 'visit' ? '' : 'none';
+  document.getElementById('form-interaction').style.display = mode === 'interaction' ? '' : 'none';
+  document.getElementById('mode-visit-btn').classList.toggle('active', mode === 'visit');
+  document.getElementById('mode-interaction-btn').classList.toggle('active', mode === 'interaction');
+}
+
+// Roster
+function handleRosterDrop(e) { e.preventDefault(); document.getElementById('roster-zone').classList.remove('drag-over'); handleRosterFile(e.dataTransfer.files[0]); }
+function handleRosterFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') { const r = new FileReader(); r.onload = e => parseRosterCSV(e.target.result); r.readAsText(file); }
+  else if (ext === 'xlsx' || ext === 'xls') { loadXLSX(file); }
+  else showRosterStatus('error', 'Please upload a .csv or .xlsx file.');
+}
+function parseRosterCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) { showRosterStatus('error','File empty.'); return; }
+  const h = lines[0].split(',').map(x=>x.trim().toLowerCase().replace(/[^a-z]/g,''));
+  const ni=h.findIndex(x=>x.includes('name')||x.includes('teacher')), gi=h.findIndex(x=>x.includes('grade')), si=h.findIndex(x=>x.includes('subject')||x.includes('content'));
+  if (ni<0) { showRosterStatus('error','No Name column found.'); return; }
+  applyRoster(lines.slice(1).map(l=>{ const c=l.split(',').map(x=>x.trim().replace(/^"|"$/g,'')); return {name:c[ni]||'',grade:gi>=0?c[gi]:'',subject:si>=0?c[si]:''}; }).filter(r=>r.name));
+}
+function loadXLSX(file) {
+  if (window.XLSX) { doXLSX(file); return; }
+  const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload=()=>doXLSX(file); s.onerror=()=>showRosterStatus('error','Could not load Excel parser.'); document.head.appendChild(s);
+}
+function doXLSX(file) {
+  const r=new FileReader(); r.onload=e=>{
+    try { const wb=XLSX.read(e.target.result,{type:'array'}); const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    applyRoster(rows.map(row=>{ const k=Object.keys(row); const nk=k.find(x=>x.toLowerCase().includes('name')||x.toLowerCase().includes('teacher')); const gk=k.find(x=>x.toLowerCase().includes('grade')); const sk=k.find(x=>x.toLowerCase().includes('subject')||x.toLowerCase().includes('content')); return {name:nk?String(row[nk]).trim():'',grade:gk?String(row[gk]).trim():'',subject:sk?String(row[sk]).trim():''}; }).filter(r=>r.name)); } catch { showRosterStatus('error','Could not read file. Try CSV.'); }
+  }; r.readAsArrayBuffer(file);
+}
+function applyRoster(parsed) {
+  if (!parsed.length) { showRosterStatus('error','No names found.'); return; }
+  roster=parsed; localStorage.setItem('roster',JSON.stringify(roster));
+  updateDatalist(); updateRosterBadge(); showRosterStatus('success',`✓ ${parsed.length} staff loaded.`); renderAll();
+}
+function clearRoster() {
+  roster=BUILT_IN_ROSTER; localStorage.setItem('roster',JSON.stringify(roster));
+  updateDatalist(); updateRosterBadge(); showRosterStatus('success',`✓ Restored Florence Sawyer roster (${BUILT_IN_ROSTER.length} staff).`); renderAll();
+}
+function showRosterStatus(type,msg) {
+  const el=document.getElementById('roster-status'); el.className='roster-status '+type;
+  el.innerHTML=msg+(type==='success'?` <button class="roster-clear" onclick="clearRoster()">Reset</button>`:'');
+}
+function updateRosterBadge() {
+  const b=document.getElementById('roster-count-badge'); b.textContent=roster.length+' staff'; b.style.display='inline';
+}
+
+// Save/Stats
+function save() { localStorage.setItem('visits',JSON.stringify(visits)); localStorage.setItem('interactions',JSON.stringify(interactions)); updateStats(); updateDatalist(); }
+function updateStats() {
+  document.getElementById('stat-total').textContent=visits.length;
+  document.getElementById('stat-interactions').textContent=interactions.length;
+  document.getElementById('stat-visited').textContent=new Set(visits.map(v=>v.teacher.toLowerCase().trim())).size;
+  const wa=Date.now()-7*86400000;
+  document.getElementById('stat-week').textContent=visits.filter(v=>new Date(v.datetime).getTime()>wa).length+interactions.filter(i=>new Date(i.datetime).getTime()>wa).length;
+}
+function updateDatalist() {
+  const dl=document.getElementById('staff-datalist');
+  const names=[...new Set([...roster.map(r=>r.name),...visits.map(v=>v.teacher),...interactions.map(i=>i.person)])].sort();
+  dl.innerHTML=names.map(n=>`<option value="${n}">`).join('');
+}
+
+// Log Visit
+function logVisit() {
+  const teacher=document.getElementById('f-teacher').value.trim();
+  const datetime=document.getElementById('f-datetime').value;
+  if (!teacher||!datetime) { showToast('Please add a teacher name and date/time.'); return; }
+  visits.unshift({id:Date.now(),teacher,room:document.getElementById('f-room').value.trim(),datetime,grade:document.getElementById('f-grade').value,subject:document.getElementById('f-subject').value,notes:document.getElementById('f-notes').value.trim(),ratings:{...ratings}});
+  save(); renderAll(); showToast('✓ Visit logged — '+teacher);
+  ['f-teacher','f-room','f-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-grade').value=''; document.getElementById('f-subject').value='';
+  document.getElementById('f-datetime').value=new Date().toISOString().slice(0,16);
+  document.querySelectorAll('.rating-btn').forEach(b=>b.className='rating-btn');
+  ratings={lt:null,se:null,is:null,ce:null};
+}
+
+// Log Interaction
+function logInteraction() {
+  const person=document.getElementById('i-person').value.trim();
+  const datetime=document.getElementById('i-datetime').value;
+  if (!person||!datetime) { showToast('Please add a name and date/time.'); return; }
+  interactions.unshift({id:Date.now(),person,datetime,type:selectedType||'Other',context:document.getElementById('i-context').value.trim(),notes:document.getElementById('i-notes').value.trim()});
+  save(); renderAll(); showToast('✓ Interaction logged — '+person);
+  ['i-person','i-context','i-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('i-datetime').value=new Date().toISOString().slice(0,16);
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active')); selectedType=null;
+}
+
+// Helpers
+function fmtDate(dt) { return new Date(dt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtTime(dt) { return new Date(dt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+function rosterInfo(name) { return roster.find(r=>r.name.toLowerCase().trim()===name.toLowerCase().trim()); }
+
+// Render Visits
+function renderVisits() {
+  const s=document.getElementById('search-visits').value.toLowerCase();
+  const g=document.getElementById('filter-grade').value;
+  const sub=document.getElementById('filter-subject').value;
+  const f=visits.filter(v=>{
+    if(g&&v.grade!==g) return false;
+    if(sub&&v.subject!==sub) return false;
+    if(s&&!v.teacher.toLowerCase().includes(s)&&!v.notes.toLowerCase().includes(s)) return false;
+    return true;
+  });
+  const list=document.getElementById('visits-list');
+  if(!f.length){list.innerHTML=`<div class="empty-state"><div class="icon">📋</div><p>No visits yet — log one using the form!</p></div>`;return;}
+  list.innerHTML=f.map(v=>{
+    const r=v.ratings; let tags='';
+    if(r.lt) tags+=`<span class="tag tag-lt">📌 LT: ${r.lt}</span>`;
+    if(r.se) tags+=`<span class="tag tag-se">👥 Eng: ${r.se}</span>`;
+    if(r.is) tags+=`<span class="tag tag-is">🎯 Instr: ${r.is}</span>`;
+    if(r.ce) tags+=`<span class="tag tag-ce">🏛 Env: ${r.ce}</span>`;
+    return `<div class="visit-card"><button class="delete-btn" onclick="deleteVisit(${v.id})">✕</button>
+      <div class="visit-card-header"><div><div class="visit-teacher">${v.teacher}</div><div class="visit-meta">${[v.room,v.grade,v.subject].filter(Boolean).join(' · ')}</div></div><div class="visit-date-badge">${fmtDate(v.datetime)} · ${fmtTime(v.datetime)}</div></div>
+      ${tags?`<div class="visit-tags">${tags}</div>`:''}
+      ${v.notes?`<div class="visit-notes">${v.notes}</div>`:''}</div>`;
+  }).join('');
+}
+
+// Render Interactions
+function renderInteractions() {
+  const s=document.getElementById('search-interactions').value.toLowerCase();
+  const t=document.getElementById('filter-itype').value;
+  const f=interactions.filter(i=>{
+    if(t&&i.type!==t) return false;
+    if(s&&!i.person.toLowerCase().includes(s)&&!i.notes.toLowerCase().includes(s)) return false;
+    return true;
+  });
+  const list=document.getElementById('interactions-list');
+  if(!f.length){list.innerHTML=`<div class="empty-state"><div class="icon">💬</div><p>No interactions logged yet — use the sidebar to add one.</p></div>`;return;}
+  list.innerHTML=f.map(i=>{
+    const re=rosterInfo(i.person);
+    const meta=re?[re.grade,re.subject].filter(Boolean).join(' · '):'';
+    return `<div class="visit-card interaction-card"><button class="delete-btn" onclick="deleteInteraction(${i.id})">✕</button>
+      <div class="visit-card-header"><div><div class="visit-teacher">${i.person}</div><div class="visit-meta">${meta}</div></div><div class="visit-date-badge interaction-date-badge">${fmtDate(i.datetime)} · ${fmtTime(i.datetime)}</div></div>
+      <div class="visit-tags"><span class="tag tag-type">💬 ${i.type}</span>${i.context?`<span class="tag tag-context">📍 ${i.context}</span>`:''}</div>
+      ${i.notes?`<div class="visit-notes">${i.notes}</div>`:''}</div>`;
+  }).join('');
+}
+
+// Render Staff
+function renderStaff(selected) {
+  const container=document.getElementById('staff-list-view');
+  const vm={}, im={};
+  visits.forEach(v=>{if(!vm[v.teacher])vm[v.teacher]=[];vm[v.teacher].push(v);});
+  interactions.forEach(i=>{if(!im[i.person])im[i.person]=[];im[i.person].push(i);});
+
+  if(selected) {
+    const vs=(vm[selected]||[]).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));
+    const is=(im[selected]||[]).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));
+    const re=rosterInfo(selected);
+    const meta=re?[re.grade,re.subject].filter(Boolean).join(' · '):'';
+    container.innerHTML=`<div class="detail-header"><button class="back-btn" onclick="renderStaff(null)">← Back</button>
+      <div><span style="font-family:'DM Serif Display',serif;font-size:1.12rem;">${selected}</span>${meta?`<span style="color:var(--ink-light);font-size:0.76rem;margin-left:8px;">${meta}</span>`:''}</div></div>
+      ${vs.length?`<div class="section-sub" style="margin-bottom:10px;">Classroom Visits (${vs.length})</div>`:''}
+      <div class="visits-list" style="margin-bottom:20px;">${vs.length?vs.map(v=>{
+        const r=v.ratings; let tags='';
+        if(r.lt) tags+=`<span class="tag tag-lt">📌 LT: ${r.lt}</span>`;
+        if(r.se) tags+=`<span class="tag tag-se">👥 Eng: ${r.se}</span>`;
+        if(r.is) tags+=`<span class="tag tag-is">🎯 Instr: ${r.is}</span>`;
+        if(r.ce) tags+=`<span class="tag tag-ce">🏛 Env: ${r.ce}</span>`;
+        return `<div class="visit-card"><div class="visit-card-header"><div class="visit-meta">${[v.room,v.grade,v.subject].filter(Boolean).join(' · ')}</div><div class="visit-date-badge">${fmtDate(v.datetime)} · ${fmtTime(v.datetime)}</div></div>${tags?`<div class="visit-tags">${tags}</div>`:''}${v.notes?`<div class="visit-notes">${v.notes}</div>`:''}</div>`;
+      }).join(''):`<p style="font-size:0.8rem;color:var(--ink-light);">No classroom visits logged yet.</p>`}</div>
+      ${is.length?`<div class="section-sub blue" style="margin-bottom:10px;">Interactions (${is.length})</div>`:''}
+      <div class="visits-list">${is.map(i=>`<div class="visit-card interaction-card"><div class="visit-card-header"><div><span class="tag tag-type">💬 ${i.type}</span>${i.context?` <span class="tag tag-context">📍 ${i.context}</span>`:''}</div><div class="visit-date-badge interaction-date-badge">${fmtDate(i.datetime)} · ${fmtTime(i.datetime)}</div></div>${i.notes?`<div class="visit-notes" style="margin-top:8px;">${i.notes}</div>`:''}</div>`).join('')}</div>`;
+    return;
+  }
+
+  const allNames=[...new Set([...roster.map(r=>r.name),...Object.keys(vm),...Object.keys(im)])];
+  if(!allNames.length){container.innerHTML=`<div class="empty-state"><div class="icon">👩‍🏫</div><p>No staff yet.</p></div>`;return;}
+  const maxV=Math.max(...allNames.map(n=>(vm[n]||[]).length),1);
+  const sorted=allNames.sort((a,b)=>(vm[b]||[]).length-(vm[a]||[]).length);
+  container.innerHTML=`<div class="teacher-grid">`+sorted.map(name=>{
+    const vs=vm[name]||[], is=im[name]||[];
+    const re=rosterInfo(name);
+    const info=re?[re.grade,re.subject].filter(Boolean).join(' · '):'';
+    const sortedV=[...vs].sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));
+    const sortedI=[...is].sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));
+    const lastV=sortedV[0]?new Date(sortedV[0].datetime):null;
+    const lastI=sortedI[0]?new Date(sortedI[0].datetime):null;
+    const lastAny=lastV&&lastI?(lastV>lastI?lastV:lastI):(lastV||lastI);
+    const pct=(vs.length/maxV)*100;
+    const cc=vs.length===0?'low':vs.length<3?'mid':'';
+    const nvBadge=vs.length===0?`<span style="font-size:0.6rem;background:var(--accent-light);color:var(--accent);padding:2px 5px;border-radius:10px;font-weight:600;">Not visited</span>`:'';
+    const iBadge=is.length?`<span style="font-size:0.6rem;background:var(--blue-light);color:var(--blue);padding:2px 5px;border-radius:10px;font-weight:600;margin-left:2px;">${is.length}i</span>`:'';
+    const lastStr=lastAny?lastAny.toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
+    return `<div class="teacher-card" onclick="renderStaff('${name.replace(/'/g,"\\'")}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;gap:3px;"><div class="teacher-name">${name}</div><div style="flex-shrink:0;display:flex;gap:2px;align-items:center;">${nvBadge}${iBadge}</div></div>
+      <div class="teacher-info">${info||'Staff'}</div>
+      <div class="visit-count-bar"><div class="visit-count-fill ${cc}" style="width:${pct}%"></div></div>
+      <div class="last-visit">${vs.length} visit${vs.length!==1?'s':''} · Last: ${lastStr}</div></div>`;
+  }).join('')+`</div>`;
+}
+
+// Render Patterns
+function renderPatterns() {
+  const container=document.getElementById('patterns-content');
+  if(!visits.length&&!interactions.length){container.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">📊</div><p>Log visits or interactions to see patterns.</p></div>`;return;}
+  const gc={},sc={},ltC={Yes:0,Partial:0,No:0},seC={High:0,Mid:0,Low:0},tC={};
+  visits.forEach(v=>{
+    if(v.grade) gc[v.grade]=(gc[v.grade]||0)+1;
+    if(v.subject) sc[v.subject]=(sc[v.subject]||0)+1;
+    if(v.ratings.lt) ltC[v.ratings.lt]=(ltC[v.ratings.lt]||0)+1;
+    if(v.ratings.se) seC[v.ratings.se]=(seC[v.ratings.se]||0)+1;
+  });
+  interactions.forEach(i=>{ tC[i.type]=(tC[i.type]||0)+1; });
+
+  const visitedSet=new Set(visits.map(v=>v.teacher.toLowerCase().trim()));
+  const unvisited=roster.filter(r=>!visitedSet.has(r.name.toLowerCase().trim())).map(r=>r.name);
+  const interactedSet=new Set(interactions.map(i=>i.person.toLowerCase().trim()));
+
+  const mxG=Math.max(...Object.values(gc),1), mxS=Math.max(...Object.values(sc),1), mxT=Math.max(...Object.values(tC),1);
+  const cols=['#c84b31','#d4a017','#2d6a4f','#2040a0','#8040a0','#c84b31','#d4a017','#2d6a4f','#2040a0','#8040a0'];
+  const ltT=Object.values(ltC).reduce((a,b)=>a+b,0)||1;
+  const seT=Object.values(seC).reduce((a,b)=>a+b,0)||1;
+
+  const gradeRows=Object.entries(gc).sort((a,b)=>b[1]-a[1]).slice(0,9).map(([g,c],i)=>`<div class="bar-row"><div class="bar-label" title="${g}">${g}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(c/mxG*100).toFixed(0)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-val">${c}</div></div>`).join('');
+  const subRows=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,9).map(([s,c],i)=>`<div class="bar-row"><div class="bar-label" title="${s}">${s}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(c/mxS*100).toFixed(0)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-val">${c}</div></div>`).join('');
+  const typeRows=Object.entries(tC).sort((a,b)=>b[1]-a[1]).map(([t,c],i)=>`<div class="bar-row"><div class="bar-label" title="${t}">${t}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(c/mxT*100).toFixed(0)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-val">${c}</div></div>`).join('');
+
+  const overdueHTML=unvisited.slice(0,14).map(name=>{
+    const ic=interactions.filter(i=>i.person.toLowerCase().trim()===name.toLowerCase().trim()).length;
+    return `<div class="overdue-item"><span>${name}</span><span class="overdue-days">No visit${ic?` · ${ic} interaction${ic!==1?'s':''}`:''}</span></div>`;
+  }).join('');
+
+  container.innerHTML=`
+    <div class="pattern-card"><h3>Visits by Grade</h3>${gradeRows||'<p style="color:var(--ink-light);font-size:0.8rem;">No data yet.</p>'}</div>
+    <div class="pattern-card"><h3>Visits by Subject</h3>${subRows||'<p style="color:var(--ink-light);font-size:0.8rem;">No data yet.</p>'}</div>
+    <div class="pattern-card">
+      <h3>Learning Targets &amp; Engagement</h3>
+      <p style="font-size:0.67rem;color:var(--ink-light);margin-bottom:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Learning Target Posted</p>
+      <div class="bar-row"><div class="bar-label">Yes</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ltC.Yes/ltT*100).toFixed(0)}%;background:var(--green)"></div></div><div class="bar-val">${ltC.Yes}</div></div>
+      <div class="bar-row"><div class="bar-label">Partial</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ltC.Partial/ltT*100).toFixed(0)}%;background:var(--gold)"></div></div><div class="bar-val">${ltC.Partial}</div></div>
+      <div class="bar-row"><div class="bar-label">No</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ltC.No/ltT*100).toFixed(0)}%;background:var(--accent)"></div></div><div class="bar-val">${ltC.No}</div></div>
+      <p style="font-size:0.67rem;color:var(--ink-light);margin:13px 0 9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Student Engagement</p>
+      <div class="bar-row"><div class="bar-label">High</div><div class="bar-wrap"><div class="bar-fill" style="width:${(seC.High/seT*100).toFixed(0)}%;background:var(--green)"></div></div><div class="bar-val">${seC.High}</div></div>
+      <div class="bar-row"><div class="bar-label">Mid</div><div class="bar-wrap"><div class="bar-fill" style="width:${(seC.Mid/seT*100).toFixed(0)}%;background:var(--gold)"></div></div><div class="bar-val">${seC.Mid}</div></div>
+      <div class="bar-row"><div class="bar-label">Low</div><div class="bar-wrap"><div class="bar-fill" style="width:${(seC.Low/seT*100).toFixed(0)}%;background:var(--accent)"></div></div><div class="bar-val">${seC.Low}</div></div>
+      ${typeRows?`<p style="font-size:0.67rem;color:var(--ink-light);margin:13px 0 9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Interaction Types</p>${typeRows}`:''}
+    </div>
+    <div class="pattern-card">
+      <h3>Not Yet Visited <span style="font-size:0.73rem;font-family:'DM Sans',sans-serif;color:var(--ink-light);font-weight:400;">(${unvisited.length} of ${roster.length})</span></h3>
+      ${unvisited.length?`<div class="overdue-list">${overdueHTML}${unvisited.length>14?`<div style="font-size:0.7rem;color:var(--ink-light);padding:5px 10px;">…and ${unvisited.length-14} more</div>`:''}</div>`:`<p style="color:var(--green);font-size:0.8rem;">✓ All ${roster.length} staff have been visited!</p>`}
+    </div>`;
+}
+
+function deleteVisit(id) { visits=visits.filter(v=>v.id!==id); save(); renderAll(); showToast('Visit removed.'); }
+function deleteInteraction(id) { interactions=interactions.filter(i=>i.id!==id); save(); renderAll(); showToast('Interaction removed.'); }
+
+function switchTab(tab,btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active','blue-tab'));
+  btn.classList.add('active');
+  if(tab==='interactions') btn.classList.add('blue-tab');
+  ['visits','interactions','staff','patterns'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
+}
+
+function renderAll() { renderVisits(); renderInteractions(); renderStaff(null); renderPatterns(); }
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+// Startup
+updateStats(); updateDatalist(); updateRosterBadge();
+showRosterStatus('success', `✓ Florence Sawyer roster loaded — ${roster.length} staff members.`);
+renderAll();
+</script>
+</body>
+</html>
