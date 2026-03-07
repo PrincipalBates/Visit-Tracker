@@ -74,7 +74,7 @@ header .subtitle { font-size: 0.6rem; color: #a0a0c0; font-weight: 300; letter-s
   display: none;
   position: fixed;
   top: var(--header-h); bottom: var(--nav-h); left: 0; right: 0;
-  overflow-y: scroll; -webkit-overflow-scrolling: touch;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 16px 14px 20px;
   background: var(--cream);
 }
@@ -187,19 +187,28 @@ textarea { resize: none; min-height: 80px; }
 .section-sub { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-light); margin-bottom: 9px; font-weight: 600; }
 .section-sub.blue { color: var(--blue); }
 
-/* ── MOBILE RESPONSIVE ── */
-@media (max-width: 700px) {
-  .bottom-nav { display: block; }
-  .desktop-wrap { display: none; }
-  .mobile-screen { display: block; }
-  .mobile-screen.hidden { display: none; }
+/* ── ALWAYS USE MOBILE LAYOUT ── */
+.bottom-nav { display: block; }
+.desktop-wrap { display: none !important; }
+.mobile-screen { display: block; }
+.mobile-screen.hidden { display: none; }
+.toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px); }
+
+/* wider screens get more breathing room */
+@media (min-width: 600px) {
+  .patterns-grid { grid-template-columns: 1fr 1fr; }
+  .teacher-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .mobile-screen { padding: 22px 32px 32px; }
+  header h1 { font-size: 1.3rem; }
+  .hstat-val { font-size: 1.3rem; }
+  .hstat-label { font-size: 0.62rem; }
+  .nav-btn { font-size: 0.72rem; }
+  .nav-btn .nav-icon { font-size: 1.5rem; }
+  :root { --nav-h: 72px; }
+}
+@media (max-width: 599px) {
   .patterns-grid { grid-template-columns: 1fr; }
   .teacher-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-  .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px); }
-  .filter-bar input, .filter-bar select { min-width: 100%; }
-}
-@media (min-width: 701px) {
-  .toast { bottom: 24px; }
 }
 </style>
 </head>
@@ -211,10 +220,18 @@ textarea { resize: none; min-height: 80px; }
     <h1>📋 Florence Sawyer</h1>
     <div class="subtitle">Visit &amp; Interaction Tracker</div>
   </div>
-  <div class="header-stats">
-    <div><div class="hstat-val" id="stat-total">0</div><div class="hstat-label">Visits</div></div>
-    <div><div class="hstat-val" id="stat-interactions">0</div><div class="hstat-label">Interactions</div></div>
-    <div><div class="hstat-val" id="stat-week">0</div><div class="hstat-label">This Week</div></div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+    <div class="header-stats">
+      <div><div class="hstat-val" id="stat-total">0</div><div class="hstat-label">Visits</div></div>
+      <div><div class="hstat-val" id="stat-interactions">0</div><div class="hstat-label">Interactions</div></div>
+      <div><div class="hstat-val" id="stat-week">0</div><div class="hstat-label">This Week</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="sync-status" style="font-size:0.65rem;letter-spacing:0.04em;"></span>
+      <button onclick="syncFromCloud()" style="font-size:0.7rem;padding:4px 10px;border-radius:6px;border:1px solid #a0a0c0;background:transparent;color:#a0a0c0;cursor:pointer;font-family:'DM Sans',sans-serif;">↓ Pull</button>
+      <button onclick="syncToCloud()" style="font-size:0.7rem;padding:4px 10px;border-radius:6px;border:none;background:var(--accent);color:white;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">↑ Push</button>
+    </div>
   </div>
 </header>
 
@@ -412,6 +429,38 @@ textarea { resize: none; min-height: 80px; }
 <div class="toast" id="toast"></div>
 
 <script>
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbx9wtGnag3dGaCL5kbWVG2zHBFJ3RqNbiQLTDN_dv_jx7NTyd63mO3GOIwKAI_MO4eoiw/exec';
+
+async function syncFromCloud() {
+  try {
+    showSyncStatus('syncing');
+    const res = await fetch(SYNC_URL);
+    const data = await res.json();
+    if (data.visits) visits = data.visits.sort((a,b) => new Date(b.datetime)-new Date(a.datetime));
+    if (data.interactions) interactions = data.interactions.sort((a,b) => new Date(b.datetime)-new Date(a.datetime));
+    localStorage.setItem('visits', JSON.stringify(visits));
+    localStorage.setItem('interactions', JSON.stringify(interactions));
+    updateStats(); updateDatalist(); renderAll();
+    showSyncStatus('ok');
+  } catch(e) { showSyncStatus('error'); }
+}
+
+async function syncToCloud() {
+  try {
+    showSyncStatus('syncing');
+    await fetch(SYNC_URL, { method:'POST', body: JSON.stringify({ action:'save', visits, interactions }) });
+    showSyncStatus('ok');
+  } catch(e) { showSyncStatus('error'); }
+}
+
+function showSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  if (state==='syncing') { el.textContent='⟳ Syncing…'; el.style.color='var(--gold)'; }
+  else if (state==='ok') { el.textContent='✓ Synced'; el.style.color='#a0c0a0'; setTimeout(()=>{ el.textContent=''; },3000); }
+  else { el.textContent='⚠ Sync failed'; el.style.color='#e08080'; }
+}
+
 const ROSTER = [{"name":"Kelsey Benoit","grade":"Preschool","subject":"Preschool"},{"name":"Anamaria Massucci","grade":"Preschool","subject":"Preschool"},{"name":"Lauren Inman","grade":"Grade 8","subject":"English Language Arts"},{"name":"Sean Flynn","grade":"Grade 5","subject":"Math & Science"},{"name":"Madison Pawela","grade":"Grade 7","subject":"Math"},{"name":"Kayla Moses","grade":"Grade 5","subject":"Math & Science"},{"name":"Elizabeth Smith","grade":"Grade 8","subject":"Math"},{"name":"Caleb Rawlinson","grade":"Grades 6-8","subject":"Music"},{"name":"Jessica Strade","grade":"Grades 6-8","subject":"Spanish"},{"name":"Chris Mazara","grade":"Grades 6-8","subject":"Art"},{"name":"Jordan Seavey","grade":"Grade 7","subject":"English Language Arts"},{"name":"Karyn Sydow","grade":"Grades 3-5","subject":"Counseling"},{"name":"Elizabeth Miller","grade":"Grade 7","subject":"Science"},{"name":"Gary Kozloski","grade":"Grade 6","subject":"Social Studies"},{"name":"Kristen Sullivan","grade":"Grade 6","subject":"English Language Arts"},{"name":"Lance Johnson","grade":"Grade 6","subject":"Math"},{"name":"Mark Schulze","grade":"Grades 6-8","subject":"Dean of Students"},{"name":"Michael Breslau","grade":"Grade 7","subject":"Social Studies"},{"name":"Michael McCutcheon","grade":"Grades K-8","subject":"Physical Education"},{"name":"Robert Anderson","grade":"Grade 6","subject":"Science"},{"name":"Corey Brownell","grade":"Grade 8","subject":"Special Education"},{"name":"Daniel Towne","grade":"Grades 6-8","subject":"Special Education"},{"name":"Hannah Olshan","grade":"Grade 8","subject":"Science"},{"name":"Heidi Kuchenbaur","grade":"Grade 6","subject":"Special Education"},{"name":"Michele Kelly","grade":"Grade 7","subject":"Special Education"},{"name":"Nicole Johnson","grade":"Grades 6-8","subject":"Counseling"},{"name":"Stephanie Williams","grade":"Grades 6-8","subject":"Counseling"},{"name":"Laura Pagington","grade":"Grade 8","subject":"Social Studies"},{"name":"Stephanie Boyle","grade":"K","subject":"Elementary education"},{"name":"Iva Sofronova","grade":"K","subject":"Elementary education"},{"name":"Caitlin Murray","grade":"K","subject":"Elementary education"},{"name":"Stephanie Barbosa","grade":"K","subject":"Elementary education"},{"name":"Lori DiPrima","grade":"1","subject":"Elementary education"},{"name":"Julia Chisholm","grade":"1","subject":"Elementary education"},{"name":"Jennifer Hubacz","grade":"1","subject":"Elementary education"},{"name":"Patrice Heffernan","grade":"1","subject":"Elementary education"},{"name":"Maura Feely","grade":"2","subject":"Elementary education"},{"name":"Carolyn Pokorney","grade":"2","subject":"Elementary education"},{"name":"Julie Aisenberg","grade":"2","subject":"Elementary education"},{"name":"Jessica Gilchrest","grade":"3","subject":"Elementary education"},{"name":"Sandy Bowles","grade":"3","subject":"Elementary education"},{"name":"Cindy Finan","grade":"3","subject":"Elementary education"},{"name":"Lori Troest","grade":"3","subject":"Elementary education"},{"name":"Jennifer Sigismondo","grade":"4","subject":"Elementary education"},{"name":"Linda Gothie","grade":"4","subject":"Elementary education"},{"name":"Melissa Walsh","grade":"4","subject":"Elementary education"},{"name":"Pam Carpenter","grade":"4","subject":"Elementary education"},{"name":"Meredith Renda","grade":"Grades K-5","subject":"Instructional Technology"},{"name":"Gregg Newton","grade":"Grades K-5","subject":"Physical Education"},{"name":"Jayne Richards","grade":"Grades K-5","subject":"Health"},{"name":"Mary Kate Winn","grade":"Grades 6-8","subject":"Health"},{"name":"Alissa Frederick","grade":"Grades K-5","subject":"Music, Vocal"},{"name":"Liz Scudiere","grade":"Grades K-5","subject":"Art"},{"name":"Neil Wilkins","grade":"Grades 6-8","subject":"Engineering"},{"name":"Mike Caligiuri","grade":"Grades K-5","subject":"Library/Media"},{"name":"Katie Salois","grade":"Grades K-5","subject":"Literacy"},{"name":"Liz West","grade":"Grades K-5","subject":"Literacy"},{"name":"Emily Richardi","grade":"Grades K-5","subject":"Literacy"},{"name":"Karen Suffin","grade":"Grades K-2","subject":"Literacy"},{"name":"Erin Walker","grade":"Grades K-2","subject":"Literacy"},{"name":"Kate Robinson","grade":"Grades K-2","subject":"Literacy"},{"name":"Kristin Lambert","grade":"Grades K-8","subject":"ELL/ESL"},{"name":"Emily Vinci","grade":"Grades K-5","subject":"Special Education"},{"name":"Kristin Diggins","grade":"Grades K-5","subject":"Special Education"},{"name":"Karen Fitzpatrick","grade":"Grades K-5","subject":"Special Education"},{"name":"Casey Taillon","grade":"Grades K-5","subject":"Special Education"},{"name":"Jane Barwick","grade":"Grades K-1","subject":"Special Education"},{"name":"Rebecca Charpentier","grade":"Grades 2-3","subject":"Special Education"},{"name":"Alicia Madden","grade":"Grade 2 and Grade 4","subject":"Special Education"},{"name":"Diane Kirby-LaChance","grade":"Grade 2 and Grade 4","subject":"Special Education"},{"name":"Kelly Davis","grade":"Grades K-8","subject":"BCBA"},{"name":"Audrey Ashe","grade":"Grades PK-2","subject":"Counseling"},{"name":"Evelyn Cubero","grade":"Grades K-5","subject":"Counseling"},{"name":"Stacy Southard","grade":"Grades K-5","subject":"Special Education"},{"name":"Nichole Alarie","grade":"Grade 1","subject":"Special Education"},{"name":"Brionni Spinazola","grade":"Grades K-5","subject":"Special Education"},{"name":"Emersyn Forde","grade":"Grade 2","subject":"Special Education"},{"name":"Kate Burke","grade":"Grades 6-8","subject":"Special Education"},{"name":"Jackie Plesca","grade":"Grades 6-8","subject":"Special Education"},{"name":"Chandra Ferraro","grade":"Grades PK-8","subject":"Administration"},{"name":"Lisa Cantin","grade":"Grades PK-8","subject":"Administration"},{"name":"Jen Dutile","grade":"","subject":"Administration"},{"name":"Kim Laster","grade":"","subject":"Administration"},{"name":"Karin Frostholm","grade":"","subject":"Nursing"},{"name":"Rebecca Carle","grade":"","subject":"Nursing"},{"name":"Jessica Davis","grade":"","subject":"Preschool"},{"name":"Angela Braaten","grade":"","subject":"Preschool"},{"name":"Emily Daelhousen","grade":"","subject":"Preschool"},{"name":"Dulce Hidalgo","grade":"","subject":"Elementary Education"},{"name":"Barbara Robichaud","grade":"","subject":"Elementary Education"},{"name":"Jake Wardwell","grade":"","subject":"Elementary Education"},{"name":"Colinda Samarjian","grade":"","subject":"Elementary Education"},{"name":"Sadia Afrin","grade":"","subject":"Elementary Education"},{"name":"Kelly Salloux","grade":"","subject":"Special Education"},{"name":"Cameryn LeShane","grade":"","subject":"Special Education"},{"name":"Georgia Mulvey","grade":"","subject":"Special Education"},{"name":"Crystal Sette","grade":"","subject":"Special Education"},{"name":"Nancy Lento","grade":"","subject":"Special Education"},{"name":"Steve Salka","grade":"","subject":"Special Education"},{"name":"Joan Bates","grade":"","subject":"Special Education"},{"name":"Stacia Downey","grade":"","subject":"Special Education"},{"name":"Kim Storey","grade":"","subject":"Special Education"},{"name":"Sandy Pagoaga","grade":"","subject":"Special Education"},{"name":"Jen Ssonko","grade":"","subject":"Special Education"},{"name":"Bethany Joinville","grade":"","subject":"Special Education"},{"name":"James Majok","grade":"","subject":"Facilities"},{"name":"Karen McNamara","grade":"","subject":"Facilities"},{"name":"Chris Roche","grade":"","subject":"Facilities"},{"name":"Paul Terra","grade":"","subject":"Facilities"},{"name":"Miguel Abreu","grade":"","subject":"Facilities"},{"name":"Jonathan Pino","grade":"","subject":"Facilities"},{"name":"Jennifer McGrath","grade":"","subject":"Nutrition"},{"name":"Monique LeBlanc","grade":"","subject":"Nutrition"},{"name":"Sandie Hawkins","grade":"","subject":"Nutrition"},{"name":"Shelly Herbst","grade":"","subject":"Nutrition"},{"name":"Margaret Tindall","grade":"","subject":"Nutrition"},{"name":"Claudia Pongratz","grade":"","subject":"Nutrition"},{"name":"Ed Pannini","grade":"","subject":"Nutrition"},{"name":"Michael Ellam","grade":"","subject":"Extended Learning"}];
 
 let visits = JSON.parse(localStorage.getItem('visits')||'[]');
@@ -522,7 +571,7 @@ function updateRosterBadges() {
 }
 
 // Data
-function save() { localStorage.setItem('visits',JSON.stringify(visits)); localStorage.setItem('interactions',JSON.stringify(interactions)); updateStats(); updateDatalist(); }
+function save() { localStorage.setItem('visits',JSON.stringify(visits)); localStorage.setItem('interactions',JSON.stringify(interactions)); updateStats(); updateDatalist(); syncToCloud(); }
 function updateStats() {
   document.getElementById('stat-total').textContent=visits.length;
   document.getElementById('stat-interactions').textContent=interactions.length;
@@ -688,6 +737,7 @@ localStorage.setItem('roster', JSON.stringify(roster));
 updateStats();updateDatalist();updateRosterBadges();
 ['m','d'].forEach(px=>{const el=document.getElementById(`${px}-roster-status`);if(el){el.className='roster-status success';el.innerHTML=`✓ ${roster.length} staff loaded. <button class="roster-clear" onclick="resetRoster()">Reset</button>`;}});
 renderAll();
+syncFromCloud();
 </script>
 </body>
 </html>
