@@ -258,19 +258,6 @@ textarea { resize: none; min-height: 80px; }
 
 <!-- MOBILE SCREENS -->
 <div class="mobile-screen" id="mscreen-log">
-  <div id="m-roster-section" style="margin-bottom:16px;">
-    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>Staff Roster</span>
-      <span id="m-roster-badge" style="display:none;font-size:0.64rem;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;"></span>
-    </div>
-    <div class="roster-zone" onclick="document.getElementById('m-roster-file').click()">
-      <div class="upload-icon">📂</div>
-      <p><strong>Upload updated roster</strong> CSV or Excel</p>
-    </div>
-    <input type="file" id="m-roster-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRosterFile(this.files[0],'m')">
-    <div class="roster-status" id="m-roster-status"></div>
-  </div>
-
   <div class="mode-toggle">
     <button class="mode-btn active" id="m-mode-visit-btn" onclick="setMode('visit','m')">🏫 Classroom Visit</button>
     <button class="mode-btn" id="m-mode-interaction-btn" onclick="setMode('interaction','m')">💬 Interaction</button>
@@ -298,6 +285,19 @@ textarea { resize: none; min-height: 80px; }
     </div>
     <div class="form-group"><label>Notes</label><textarea id="m-f-notes" placeholder="What did you see? Any follow-up?"></textarea></div>
     <button class="btn-submit btn-visit" onclick="logVisit('m')">+ Log This Visit</button>
+  </div>
+
+<div id="m-roster-section" style="margin-bottom:16px;">
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Staff Roster</span>
+      <span id="m-roster-badge" style="display:none;font-size:0.64rem;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;"></span>
+    </div>
+    <div class="roster-zone" onclick="document.getElementById('m-roster-file').click()">
+      <div class="upload-icon">📂</div>
+      <p><strong>Upload updated roster</strong> CSV or Excel</p>
+    </div>
+    <input type="file" id="m-roster-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRosterFile(this.files[0],'m')">
+    <div class="roster-status" id="m-roster-status"></div>
   </div>
 
   <div id="m-form-interaction" style="display:none;">
@@ -348,19 +348,6 @@ textarea { resize: none; min-height: 80px; }
 <!-- DESKTOP LAYOUT -->
 <div class="desktop-wrap">
   <div class="sidebar">
-    <div id="d-roster-section" style="margin-bottom:16px;">
-      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Staff Roster</span>
-        <span id="d-roster-badge" style="display:none;font-size:0.64rem;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;"></span>
-      </div>
-      <div class="roster-zone" onclick="document.getElementById('d-roster-file').click()">
-        <div class="upload-icon">📂</div>
-        <p><strong>Upload updated roster</strong> CSV or Excel</p>
-      </div>
-      <input type="file" id="d-roster-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRosterFile(this.files[0],'d')">
-      <div class="roster-status" id="d-roster-status"></div>
-    </div>
-
     <div class="mode-toggle">
       <button class="mode-btn active" id="d-mode-visit-btn" onclick="setMode('visit','d')">🏫 Classroom Visit</button>
       <button class="mode-btn" id="d-mode-interaction-btn" onclick="setMode('interaction','d')">💬 Interaction</button>
@@ -388,6 +375,19 @@ textarea { resize: none; min-height: 80px; }
       </div>
       <div class="form-group"><label>Notes</label><textarea id="d-f-notes" placeholder="What did you see? Any follow-up?"></textarea></div>
       <button class="btn-submit btn-visit" onclick="logVisit('d')">+ Log This Visit</button>
+    </div>
+
+    <div id="d-roster-section" style="margin-top:18px;margin-bottom:16px;">
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Staff Roster</span>
+        <span id="d-roster-badge" style="display:none;font-size:0.64rem;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;"></span>
+      </div>
+      <div class="roster-zone" onclick="document.getElementById('d-roster-file').click()">
+        <div class="upload-icon">📂</div>
+        <p><strong>Upload updated roster</strong> CSV or Excel</p>
+      </div>
+      <input type="file" id="d-roster-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRosterFile(this.files[0],'d')">
+      <div class="roster-status" id="d-roster-status"></div>
     </div>
 
     <div id="d-form-interaction" style="display:none;">
@@ -471,8 +471,12 @@ let dRatings = {lt:null,se:null,is:null,ce:null};
 let mSelType = null, dSelType = null;
 
 // Init datetimes
-const now = new Date().toISOString().slice(0,16);
-['m-f-datetime','m-i-datetime','d-f-datetime','d-i-datetime'].forEach(id => { const el=document.getElementById(id); if(el) el.value=now; });
+function nowEastern() {
+  const d = new Date();
+  // Format as YYYY-MM-DDTHH:MM in America/New_York
+  return d.toLocaleString('sv-SE', { timeZone: 'America/New_York' }).replace(' ','T').slice(0,16);
+}
+['m-f-datetime','m-i-datetime','d-f-datetime','d-i-datetime'].forEach(id => { const el=document.getElementById(id); if(el) el.value=nowEastern(); });
 
 // Rating buttons
 document.querySelectorAll('.rating-row').forEach(row => {
@@ -594,7 +598,7 @@ function logVisit(px) {
   save();renderAll();showToast('✓ Visit logged — '+teacher);
   [`${px}-f-teacher`,`${px}-f-room`,`${px}-f-notes`].forEach(id=>document.getElementById(id).value='');
   document.getElementById(`${px}-f-grade`).value='';document.getElementById(`${px}-f-subject`).value='';
-  document.getElementById(`${px}-f-datetime`).value=new Date().toISOString().slice(0,16);
+  document.getElementById(`${px}-f-datetime`).value=nowEastern();
   document.querySelectorAll(`[data-prefix="${px}"] .rating-btn`).forEach(b=>b.className='rating-btn');
   if(px==='m') Object.keys(mRatings).forEach(k=>mRatings[k]=null);
   else Object.keys(dRatings).forEach(k=>dRatings[k]=null);
@@ -607,7 +611,7 @@ function logInteraction(px) {
   interactions.unshift({id:Date.now(),person,datetime,type:type||'Other',context:document.getElementById(`${px}-i-context`).value.trim(),notes:document.getElementById(`${px}-i-notes`).value.trim()});
   save();renderAll();showToast('✓ Interaction logged — '+person);
   [`${px}-i-person`,`${px}-i-context`,`${px}-i-notes`].forEach(id=>document.getElementById(id).value='');
-  document.getElementById(`${px}-i-datetime`).value=new Date().toISOString().slice(0,16);
+  document.getElementById(`${px}-i-datetime`).value=nowEastern();
   document.querySelectorAll(`#${px}-type-pills .type-pill`).forEach(p=>p.classList.remove('active'));
   if(px==='m') mSelType=null; else dSelType=null;
 }
