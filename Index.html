@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Visit Tracker">
+<title>Florence Sawyer — Visit Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1a2e; --ink-light: #4a4a6a; --cream: #f8f6f0; --cream-dark: #ede9df;
+  --accent: #c84b31; --accent-light: #f0e8e5; --gold: #d4a017; --gold-light: #fdf5e0;
+  --green: #2d6a4f; --green-light: #e8f4ee; --blue: #2040a0; --blue-light: #e8f0ff;
+  --border: #d0ccc0; --shadow: 0 2px 16px rgba(26,26,46,0.08);
+  --nav-h: 64px; --header-h: 58px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; overscroll-behavior: none; }
+
+/* ── HEADER ── */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--ink); color: var(--cream);
+  padding: 10px 16px; padding-top: max(10px, env(safe-area-inset-top));
+  border-bottom: 3px solid var(--accent);
+  display: flex; align-items: center; justify-content: space-between;
+  height: var(--header-h);
+}
+header h1 { font-family: 'DM Serif Display', serif; font-size: 1.15rem; line-height: 1.1; }
+header .subtitle { font-size: 0.6rem; color: #a0a0c0; font-weight: 300; letter-spacing: 0.07em; text-transform: uppercase; }
+.header-stats { display: flex; gap: 14px; text-align: right; }
+.hstat-val { font-family: 'DM Serif Display', serif; font-size: 1.15rem; color: var(--gold); line-height: 1; }
+.hstat-label { font-size: 0.55rem; color: #a0a0c0; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: white; border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  height: var(--nav-h);
+}
+.bottom-nav-inner { display: flex; height: 100%; }
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: none; background: none; color: var(--ink-light); cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 0.62rem; font-weight: 500;
+  gap: 3px; padding: 8px 4px; transition: color 0.15s;
+}
+.nav-btn .nav-icon { font-size: 1.35rem; line-height: 1; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active.blue { color: var(--blue); }
+
+/* ── DESKTOP LAYOUT ── */
+.desktop-wrap {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  min-height: calc(100vh - var(--header-h));
+  margin-top: var(--header-h);
+}
+.sidebar {
+  background: white; border-right: 1px solid var(--border);
+  padding: 18px 18px 24px; overflow-y: auto;
+  height: calc(100vh - var(--header-h)); position: sticky; top: var(--header-h);
+}
+.main-area {
+  padding: 22px 24px 32px; overflow-y: auto;
+}
+
+/* ── MOBILE LAYOUT ── */
+.mobile-screen {
+  display: none;
+  position: fixed;
+  top: var(--header-h); bottom: var(--nav-h); left: 0; right: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 16px 14px 20px;
+  background: var(--cream);
+}
+
+/* ── SHARED FORM STYLES ── */
+.mode-toggle { display: flex; margin-bottom: 16px; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.mode-btn { flex: 1; padding: 10px 4px; border: none; background: white; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--ink-light); cursor: pointer; transition: all 0.15s; }
+.mode-btn.active { background: var(--ink); color: white; font-weight: 600; }
+.mode-btn:first-child { border-right: 1px solid var(--border); }
+
+.section-label { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.11em; color: var(--ink-light); font-weight: 600; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--cream-dark); }
+.form-group { margin-bottom: 13px; }
+label { display: block; font-size: 0.73rem; font-weight: 500; color: var(--ink-light); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+input, select, textarea {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 16px; /* 16px prevents iOS zoom */
+  color: var(--ink); background: var(--cream); transition: border-color 0.15s; outline: none;
+  -webkit-appearance: none; appearance: none;
+}
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234a4a6a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); background: white; }
+textarea { resize: none; min-height: 80px; }
+
+.obs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 5px; }
+.obs-item { background: var(--cream); border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 9px; }
+.obs-item label { font-size: 0.67rem; font-weight: 600; color: var(--ink); text-transform: none; letter-spacing: 0; margin-bottom: 4px; }
+.rating-row { display: flex; gap: 4px; margin-top: 3px; }
+.rating-btn { flex: 1; border: 1.5px solid var(--border); background: white; border-radius: 6px; padding: 6px 0; font-size: 0.68rem; cursor: pointer; transition: all 0.12s; font-family: 'DM Sans', sans-serif; color: var(--ink-light); }
+.rating-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+
+.type-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.type-pill { padding: 7px 13px; border: 1.5px solid var(--border); border-radius: 20px; font-size: 0.76rem; cursor: pointer; background: white; color: var(--ink-light); font-family: 'DM Sans', sans-serif; transition: all 0.12s; }
+.type-pill.active { background: var(--blue); border-color: var(--blue); color: white; font-weight: 600; }
+
+.btn-submit { width: 100%; color: white; border: none; border-radius: 10px; padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.15s; margin-top: 8px; }
+.btn-visit { background: var(--accent); }
+.btn-interaction { background: var(--blue); }
+.btn-submit:active { opacity: 0.8; }
+
+.roster-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--cream); margin-bottom: 8px; }
+.roster-zone .upload-icon { font-size: 1.3rem; margin-bottom: 2px; }
+.roster-zone p { font-size: 0.74rem; color: var(--ink-light); }
+.roster-zone strong { color: var(--accent); }
+.roster-status { font-size: 0.72rem; padding: 7px 10px; border-radius: 6px; margin-bottom: 10px; display: none; }
+.roster-status.success { background: var(--green-light); color: var(--green); display: block; }
+.roster-status.error { background: var(--accent-light); color: var(--accent); display: block; }
+.roster-clear { font-size: 0.68rem; color: var(--ink-light); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; cursor: pointer; margin-left: 5px; font-family: 'DM Sans', sans-serif; }
+
+/* ── DESKTOP TABS ── */
+.tabs { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 2px solid var(--border); }
+.tab { padding: 8px 16px; border: none; background: none; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--ink-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab.active.blue-tab { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ── CARDS ── */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.filter-bar input, .filter-bar select { flex: 1; min-width: 120px; font-size: 14px; padding: 8px 10px; }
+.visits-list { display: flex; flex-direction: column; gap: 10px; }
+.visit-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; position: relative; }
+.visit-card.interaction-card { border-left: 3px solid var(--blue); }
+.visit-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+.visit-teacher { font-family: 'DM Serif Display', serif; font-size: 1.05rem; }
+.visit-meta { font-size: 0.71rem; color: var(--ink-light); margin-top: 2px; }
+.visit-date-badge { font-size: 0.67rem; background: var(--ink); color: var(--cream); padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.ibadge { background: var(--blue) !important; }
+.visit-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+.tag { font-size: 0.64rem; padding: 3px 8px; border-radius: 20px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.tag-lt { background: #fff3e0; color: #b26a00; }
+.tag-se { background: var(--green-light); color: var(--green); }
+.tag-is { background: var(--blue-light); color: var(--blue); }
+.tag-ce { background: var(--accent-light); color: var(--accent); }
+.tag-type { background: var(--blue-light); color: var(--blue); }
+.tag-context { background: var(--gold-light); color: #7a5a00; }
+.visit-notes { font-size: 0.79rem; color: var(--ink-light); line-height: 1.52; border-top: 1px solid var(--cream-dark); padding-top: 8px; margin-top: 4px; }
+.delete-btn { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 0.7rem; color: #ccc; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+.delete-btn:active { background: var(--accent-light); color: var(--accent); }
+
+/* ── STAFF GRID ── */
+.teacher-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.teacher-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 13px; cursor: pointer; }
+.teacher-card:active { border-color: var(--accent); }
+.teacher-name { font-family: 'DM Serif Display', serif; font-size: 0.92rem; margin-bottom: 3px; }
+.teacher-info { font-size: 0.69rem; color: var(--ink-light); margin-bottom: 7px; }
+.visit-count-bar { height: 4px; background: var(--cream-dark); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+.visit-count-fill { height: 100%; background: var(--green); border-radius: 2px; }
+.visit-count-fill.low { background: var(--accent); }
+.visit-count-fill.mid { background: var(--gold); }
+.last-visit { font-size: 0.65rem; color: var(--ink-light); }
+
+/* ── PATTERNS ── */
+.patterns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pattern-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.pattern-card h3 { font-family: 'DM Serif Display', serif; font-size: 0.96rem; margin-bottom: 11px; }
+.bar-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.bar-label { font-size: 0.72rem; width: 108px; color: var(--ink-light); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-wrap { flex: 1; height: 7px; background: var(--cream-dark); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; }
+.bar-val { font-size: 0.7rem; font-weight: 600; color: var(--ink); width: 22px; text-align: right; }
+.overdue-list { display: flex; flex-direction: column; gap: 5px; max-height: 260px; overflow-y: auto; }
+.overdue-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: var(--accent-light); border-radius: 8px; font-size: 0.76rem; }
+.overdue-days { color: var(--accent); font-weight: 600; font-size: 0.68rem; }
+
+.empty-state { text-align: center; padding: 48px 20px; color: var(--ink-light); }
+.empty-state .icon { font-size: 2.2rem; margin-bottom: 8px; }
+.empty-state p { font-size: 0.84rem; }
+.toast { position: fixed; bottom: calc(var(--nav-h) + 12px); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--ink); color: white; padding: 9px 18px; border-radius: 30px; font-size: 0.8rem; opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 200; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.back-btn { border: 1px solid var(--border); background: white; border-radius: 8px; padding: 7px 13px; font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.section-sub { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-light); margin-bottom: 9px; font-weight: 600; }
+.section-sub.blue { color: var(--blue); }
+
+/* ── ALWAYS USE MOBILE LAYOUT ── */
+.bottom-nav { display: block; }
+.desktop-wrap { display: none !important; }
+.mobile-screen { display: block; }
+.mobile-screen.hidden { display: none; }
+.toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px); }
+
+/* wider screens get more breathing room */
+@media (min-width: 600px) {
+  .patterns-grid { grid-template-columns: 1fr 1fr; }
+  .teacher-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .mobile-screen { padding: 22px 32px 32px; }
+  header h1 { font-size: 1.3rem; }
+  .hstat-val { font-size: 1.3rem; }
+  .hstat-label { font-size: 0.62rem; }
+  .nav-btn { font-size: 0.72rem; }
+  .nav-btn .nav-icon { font-size: 1.5rem; }
+  :root { --nav-h: 72px; }
+}
+@media (max-width: 599px) {
+  .patterns-grid { grid-template-columns: 1fr; }
+  .teacher-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <h1>📋 Florence Sawyer</h1>
+    <div class="subtitle">Visit &amp; Interaction Tracker</div>
+  </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+    <div class="header-stats">
+      <div><div class="hstat-val" id="stat-total">0</div><div class="hstat-label">Visits</div></div>
+      <div><div class="hstat-val" id="stat-interactions">0</div><div class="hstat-label">Interactions</div></div>
+      <div><div class="hstat-val" id="stat-week">0</div><div class="hstat-label">This Week</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="sync-status" style="font-size:0.65rem;letter-spacing:0.04em;"></span>
+      <button onclick="syncFromCloud(true)" style="font-size:0.7rem;padding:4px 10px;border-radius:6px;border:1px solid #a0a0c0;background:transparent;color:#a0a0c0;cursor:pointer;font-family:'DM Sans',sans-serif;">↓ Pull</button>
+      <button onclick="syncToCloud()" style="font-size:0.7rem;padding:4px 10px;border-radius:6px;border:none;background:var(--accent);color:white;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">↑ Push</button>
+    </div>
+  </div>
+</header>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="nav-btn active" id="mnav-log" onclick="mobileNav('log',this)">
+      <span class="nav-icon">✏️</span>Log
+    </button>
+    <button class="nav-btn" id="mnav-visits" onclick="mobileNav('visits',this)">
+      <span class="nav-icon">📋</span>Visits
+    </button>
+    <button class="nav-btn blue" id="mnav-interactions" onclick="mobileNav('interactions',this)">
+      <span class="nav-icon">💬</span>Interact
+    </button>
+    <button class="nav-btn" id="mnav-staff" onclick="mobileNav('staff',this)">
+      <span class="nav-icon">👩‍🏫</span>Staff
+    </button>
+    <button class="nav-btn" id="mnav-patterns" onclick="mobileNav('patterns',this)">
+      <span class="nav-icon">📊</span>Patterns
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE SCREENS -->
+<div class="mobile-screen" id="mscreen-log">
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="m-mode-visit-btn" onclick="setMode('visit','m')">🏫 Classroom Visit</button>
+    <button class="mode-btn" id="m-mode-interaction-btn" onclick="setMode('interaction','m')">💬 Interaction</button>
+  </div>
+
+  <div id="m-form-visit">
+    <div class="section-label">Log a Classroom Visit</div>
+    <div class="form-group"><label>Teacher</label><input type="text" id="m-f-teacher" placeholder="Start typing…" list="staff-datalist" autocomplete="off"></div>
+    <div class="form-group"><label>Room</label><input type="text" id="m-f-room" placeholder="e.g. Room 204"></div>
+    <div class="form-group"><label>Date &amp; Time</label><input type="datetime-local" id="m-f-datetime"></div>
+    <div class="form-group"><label>Grade</label>
+      <select id="m-f-grade"><option value="">Select grade</option><option>Preschool</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Multi-grade</option></select>
+    </div>
+    <div class="form-group"><label>Content Area</label>
+      <select id="m-f-subject"><option value="">Select subject</option><option>ELA / Reading</option><option>Math</option><option>Science</option><option>Social Studies</option><option>Writing</option><option>Special Education</option><option>Counseling</option><option>Physical Education</option><option>Art</option><option>Music</option><option>Health</option><option>Engineering</option><option>Library/Media</option><option>Literacy</option><option>ELL/ESL</option><option>Other</option></select>
+    </div>
+    <div class="form-group">
+      <div class="section-label" style="margin-bottom:9px;">Observation Ratings</div>
+      <div class="obs-grid">
+        <div class="obs-item"><label>Learning Target</label><div class="rating-row" data-field="lt" data-prefix="m"><button class="rating-btn" data-val="Yes">Yes</button><button class="rating-btn" data-val="Partial">Part</button><button class="rating-btn" data-val="No">No</button></div></div>
+        <div class="obs-item"><label>Engagement</label><div class="rating-row" data-field="se" data-prefix="m"><button class="rating-btn" data-val="High">High</button><button class="rating-btn" data-val="Mid">Mid</button><button class="rating-btn" data-val="Low">Low</button></div></div>
+        <div class="obs-item"><label>Instruction</label><div class="rating-row" data-field="is" data-prefix="m"><button class="rating-btn" data-val="Strong">Strong</button><button class="rating-btn" data-val="Developing">Dev</button><button class="rating-btn" data-val="Needs Support">NS</button></div></div>
+        <div class="obs-item"><label>Environment</label><div class="rating-row" data-field="ce" data-prefix="m"><button class="rating-btn" data-val="Strong">Strong</button><button class="rating-btn" data-val="Developing">Dev</button><button class="rating-btn" data-val="Needs Support">NS</button></div></div>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="m-f-notes" placeholder="What did you see? Any follow-up?"></textarea></div>
+    <button class="btn-submit btn-visit" onclick="logVisit('m')">+ Log This Visit</button>
+  </div>
+
+<div id="m-roster-section" style="margin-bottom:16px;">
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Staff Roster</span>
+      <span id="m-roster-badge" style="display:none;font-size:0.64rem;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;"></span>
+    </div>
+    <div class="roster-zone" onclick="document.getElementById('m-roster-file').click()">
+      <div class="upload-icon">📂</div>
+      <p><strong>Upload updated roster</strong> CSV or Excel</p>
+    </div>
+    <input type="file" id="m-roster-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRosterFile(this.files[0],'m')">
+    <div class="roster-status" id="m-roster-status"></div>
+  </div>
+
+  <div id="m-form-interaction" style="display:none;">
+    <div class="section-label">Log an Interaction</div>
+    <div class="form-group"><label>Staff Member</label><input type="text" id="m-i-person" placeholder="Start typing…" list="staff-datalist" autocomplete="off"></div>
+    <div class="form-group"><label>Date &amp; Time</label><input type="datetime-local" id="m-i-datetime"></div>
+    <div class="form-group"><label>Type</label>
+      <div class="type-pills" id="m-type-pills">
+        <button class="type-pill" data-val="Check-in">☀️ Check-in</button>
+        <button class="type-pill" data-val="Hallway / Informal">👋 Hallway</button>
+        <button class="type-pill" data-val="1:1 Meeting">🗓 1:1 Meeting</button>
+        <button class="type-pill" data-val="Problem-solving">🔧 Problem-solving</button>
+        <button class="type-pill" data-val="Recognition">🌟 Recognition</button>
+        <button class="type-pill" data-val="Family concern">👪 Family concern</button>
+        <button class="type-pill" data-val="Other">💬 Other</button>
+      </div>
+    </div>
+    <div class="form-group"><label>Context / Location</label><input type="text" id="m-i-context" placeholder="e.g. Main office, cafeteria…"></div>
+    <div class="form-group"><label>Notes / Follow-up</label><textarea id="m-i-notes" placeholder="What was discussed?"></textarea></div>
+    <button class="btn-submit btn-interaction" onclick="logInteraction('m')">+ Log This Interaction</button>
+  </div>
+</div>
+
+<div class="mobile-screen hidden" id="mscreen-visits">
+  <div class="filter-bar">
+    <input type="text" id="m-search-visits" placeholder="🔍 Search…" oninput="renderVisits()">
+    <select id="m-filter-grade" onchange="renderVisits()"><option value="">All Grades</option><option>Preschool</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option></select>
+  </div>
+  <div class="visits-list" id="m-visits-list"></div>
+</div>
+
+<div class="mobile-screen hidden" id="mscreen-interactions">
+  <div class="filter-bar">
+    <input type="text" id="m-search-interactions" placeholder="🔍 Search…" oninput="renderInteractions()">
+    <select id="m-filter-itype" onchange="renderInteractions()"><option value="">All Types</option><option>Check-in</option><option>Hallway / Informal</option><option>1:1 Meeting</option><option>Problem-solving</option><option>Recognition</option><option>Family concern</option><option>Other</option></select>
+  </div>
+  <div class="visits-list" id="m-interactions-list"></div>
+</div>
+
+<div class="mobile-screen hidden" id="mscreen-staff">
+  <div id="m-staff-view"></div>
+</div>
+
+<div class="mobile-screen hidden" id="mscreen-patterns">
+  <div class="patterns-grid" id="m-patterns-content"></div>
+</div>
+
+<!-- DESKTOP LAYOUT -->
+<div class="desktop-wrap">
+  <div class="sidebar">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="d-mode-visit-btn" onclick="setMode('visit','d')">🏫 Classroom Visit</button>
+      <button class="mode-btn" id="d-mode-interaction-btn" onclick="setMode('interaction','d')">💬 Interaction</button>
+    </div>
+
+    <div id="d-form-visit">
+      <div class="section-label">Log a Classroom Visit</div>
+      <div class="form-group"><label>Teacher</label><input type="text" id="d-f-teacher" placeholder="Start typing…" list="staff-datalist" autocomplete="off"></div>
+      <div class="form-group"><label>Room</label><input type="text" id="d-f-room" placeholder="e.g. Room 204"></div>
+      <div class="form-group"><label>Date &amp; Time</label><input type="datetime-local" id="d-f-datetime"></div>
+      <div class="form-group"><label>Grade</label>
+        <select id="d-f-grade"><option value="">Select grade</option><option>Preschool</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Multi-grade</option></select>
+      </div>
+      <div class="form-group"><label>Content Area</label>
+        <select id="d-f-subject"><option value="">Select subject</option><option>ELA / Reading</option><option>Math</option><option>Science</option><option>Social Studies</option><option>Writing</option><option>Special Education</option><option>Counseling</option><option>Physical Education</option><option>Art</option><option>Music</option><option>Health</option><option>Engineering</option><option>Library/Media</option><option>Literacy</option><option>ELL/ESL</option><option>Other</option></select>
+      </div>
+      <div class="form-group">
+        <div class="section-label" style="margin-bottom:9px;">Observation Ratings</div>
+        <div class="obs-grid">
+          <div class="obs-item"><label>Learning Target</label><div class="rating-row" data-field="lt" data-prefix="d"><button class="rating-btn" data-val="Yes">Yes</button><button class="rating-btn" data-val="Partial">Part</button><button class="rating-btn" data-val="No">No</button></div></div>
+          <div class="obs-item"><label>Engagement</label><div class="rating-row" data-field="se" data-prefix="d"><button class="rating-btn" data-val="High">High</button><button class="rating-btn" data-val="Mid">Mid</button><button class="rating-btn" data-val="Low">Low</button></div></div>
+          <div class="obs-item"><label>Instruction</label><div class="rating-row" data-field="is" data-prefix="d"><button class="rating-btn" data-val="Strong">Strong</button><button class="rating-btn" data-val="Developing">Dev</button><button class="rating-btn" data-val="Needs Support">NS</button></div></div>
+          <div class="obs-item"><label>Environment</label><div class="rating-row" data-field="ce" data-prefix="d"><button class="rating-btn" data-val="Strong">Strong</button><button class="rating-btn" data-val="Developing">Dev</button><button class="rating-btn" data-val="Needs Support">NS</button></div></div>
+        </div>
+      </div>
+      <div class="form-group"><label>Notes</label><textarea id="d-f-notes" placeholder="What did you see? Any follow-up?"></textarea></div>
+      <button class="btn-submit btn-visit" onclick="logVisit('d')">+ Log This Visit</button>
+    </div>
+
+    <div id="d-roster-section" style="margin-top:18px;margin-bottom:16px;">
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Staff Roster</span>
+        <span id="d-roster-badge" style="display:none;font-size:0.64rem;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;"></span>
+      </div>
+      <div class="roster-zone" onclick="document.getElementById('d-roster-file').click()">
+        <div class="upload-icon">📂</div>
+        <p><strong>Upload updated roster</strong> CSV or Excel</p>
+      </div>
+      <input type="file" id="d-roster-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleRosterFile(this.files[0],'d')">
+      <div class="roster-status" id="d-roster-status"></div>
+    </div>
+
+    <div id="d-form-interaction" style="display:none;">
+      <div class="section-label">Log an Interaction</div>
+      <div class="form-group"><label>Staff Member</label><input type="text" id="d-i-person" placeholder="Start typing…" list="staff-datalist" autocomplete="off"></div>
+      <div class="form-group"><label>Date &amp; Time</label><input type="datetime-local" id="d-i-datetime"></div>
+      <div class="form-group"><label>Type</label>
+        <div class="type-pills" id="d-type-pills">
+          <button class="type-pill" data-val="Check-in">☀️ Check-in</button>
+          <button class="type-pill" data-val="Hallway / Informal">👋 Hallway</button>
+          <button class="type-pill" data-val="1:1 Meeting">🗓 1:1 Meeting</button>
+          <button class="type-pill" data-val="Problem-solving">🔧 Problem-solving</button>
+          <button class="type-pill" data-val="Recognition">🌟 Recognition</button>
+          <button class="type-pill" data-val="Family concern">👪 Family concern</button>
+          <button class="type-pill" data-val="Other">💬 Other</button>
+        </div>
+      </div>
+      <div class="form-group"><label>Context / Location</label><input type="text" id="d-i-context" placeholder="e.g. Main office, cafeteria…"></div>
+      <div class="form-group"><label>Notes / Follow-up</label><textarea id="d-i-notes" placeholder="What was discussed?"></textarea></div>
+      <button class="btn-submit btn-interaction" onclick="logInteraction('d')">+ Log This Interaction</button>
+    </div>
+  </div>
+
+  <div class="main-area">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('visits',this)">All Visits</button>
+      <button class="tab" onclick="switchTab('interactions',this)">Interactions</button>
+      <button class="tab" onclick="switchTab('staff',this)">By Staff</button>
+      <button class="tab" onclick="switchTab('patterns',this)">Patterns</button>
+    </div>
+    <div id="tab-visits"><div class="filter-bar"><input type="text" id="d-search-visits" placeholder="🔍 Search…" oninput="renderVisits()"><select id="d-filter-grade" onchange="renderVisits()"><option value="">All Grades</option><option>Preschool</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option></select><select id="d-filter-subject" onchange="renderVisits()"><option value="">All Subjects</option><option>ELA / Reading</option><option>Math</option><option>Science</option><option>Social Studies</option><option>Special Education</option><option>Counseling</option><option>Physical Education</option><option>Art</option><option>Music</option><option>Engineering</option><option>Literacy</option><option>ELL/ESL</option></select></div><div class="visits-list" id="d-visits-list"></div></div>
+    <div id="tab-interactions" style="display:none;"><div class="filter-bar"><input type="text" id="d-search-interactions" placeholder="🔍 Search…" oninput="renderInteractions()"><select id="d-filter-itype" onchange="renderInteractions()"><option value="">All Types</option><option>Check-in</option><option>Hallway / Informal</option><option>1:1 Meeting</option><option>Problem-solving</option><option>Recognition</option><option>Family concern</option><option>Other</option></select></div><div class="visits-list" id="d-interactions-list"></div></div>
+    <div id="tab-staff" style="display:none;"><div id="d-staff-view"></div></div>
+    <div id="tab-patterns" style="display:none;"><div class="patterns-grid" id="d-patterns-content"></div></div>
+  </div>
+</div>
+
+<datalist id="staff-datalist"></datalist>
+<div class="toast" id="toast"></div>
+
+<script>
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbx9wtGnag3dGaCL5kbWVG2zHBFJ3RqNbiQLTDN_dv_jx7NTyd63mO3GOIwKAI_MO4eoiw/exec';
+
+async function syncFromCloud(forceOverwrite=false) {
+  try {
+    showSyncStatus('syncing');
+    const res = await fetch(SYNC_URL);
+    const data = await res.json();
+    const cloudVisits = data.visits || [];
+    const cloudInteractions = data.interactions || [];
+    const cloudHasData = cloudVisits.length > 0 || cloudInteractions.length > 0;
+    const localHasData = visits.length > 0 || interactions.length > 0;
+
+    if (cloudHasData) {
+      // Cloud has data — always safe to pull
+      visits = cloudVisits.sort((a,b) => new Date(b.datetime)-new Date(a.datetime));
+      interactions = cloudInteractions.sort((a,b) => new Date(b.datetime)-new Date(a.datetime));
+      localStorage.setItem('visits', JSON.stringify(visits));
+      localStorage.setItem('interactions', JSON.stringify(interactions));
+      updateStats(); updateDatalist(); renderAll();
+      showSyncStatus('ok');
+    } else if (localHasData && !forceOverwrite) {
+      // Cloud is empty but we have local data — push local up to sheet instead
+      showSyncStatus('ok');
+      await syncToCloud();
+    } else if (forceOverwrite) {
+      // Manual pull — user explicitly wants cloud data even if empty
+      visits = cloudVisits;
+      interactions = cloudInteractions;
+      localStorage.setItem('visits', JSON.stringify(visits));
+      localStorage.setItem('interactions', JSON.stringify(interactions));
+      updateStats(); updateDatalist(); renderAll();
+      showSyncStatus('ok');
+    } else {
+      showSyncStatus('ok');
+    }
+  } catch(e) { showSyncStatus('error'); }
+}
+
+async function syncToCloud() {
+  try {
+    showSyncStatus('syncing');
+    await fetch(SYNC_URL, { method:'POST', body: JSON.stringify({ action:'save', visits, interactions }) });
+    showSyncStatus('ok');
+  } catch(e) { showSyncStatus('error'); }
+}
+
+function showSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  if (state==='syncing') { el.textContent='⟳ Syncing…'; el.style.color='var(--gold)'; }
+  else if (state==='ok') { el.textContent='✓ Synced'; el.style.color='#a0c0a0'; setTimeout(()=>{ el.textContent=''; },3000); }
+  else { el.textContent='⚠ Sync failed'; el.style.color='#e08080'; }
+}
+
+const ROSTER = [{"name":"Kelsey Benoit","grade":"Preschool","subject":"Preschool"},{"name":"Anamaria Massucci","grade":"Preschool","subject":"Preschool"},{"name":"Lauren Inman","grade":"Grade 8","subject":"English Language Arts"},{"name":"Sean Flynn","grade":"Grade 5","subject":"Math & Science"},{"name":"Madison Pawela","grade":"Grade 7","subject":"Math"},{"name":"Kayla Moses","grade":"Grade 5","subject":"Math & Science"},{"name":"Elizabeth Smith","grade":"Grade 8","subject":"Math"},{"name":"Caleb Rawlinson","grade":"Grades 6-8","subject":"Music"},{"name":"Jessica Strade","grade":"Grades 6-8","subject":"Spanish"},{"name":"Chris Mazara","grade":"Grades 6-8","subject":"Art"},{"name":"Jordan Seavey","grade":"Grade 7","subject":"English Language Arts"},{"name":"Karyn Sydow","grade":"Grades 3-5","subject":"Counseling"},{"name":"Elizabeth Miller","grade":"Grade 7","subject":"Science"},{"name":"Gary Kozloski","grade":"Grade 6","subject":"Social Studies"},{"name":"Kristen Sullivan","grade":"Grade 6","subject":"English Language Arts"},{"name":"Lance Johnson","grade":"Grade 6","subject":"Math"},{"name":"Mark Schulze","grade":"Grades 6-8","subject":"Dean of Students"},{"name":"Michael Breslau","grade":"Grade 7","subject":"Social Studies"},{"name":"Michael McCutcheon","grade":"Grades K-8","subject":"Physical Education"},{"name":"Robert Anderson","grade":"Grade 6","subject":"Science"},{"name":"Corey Brownell","grade":"Grade 8","subject":"Special Education"},{"name":"Daniel Towne","grade":"Grades 6-8","subject":"Special Education"},{"name":"Hannah Olshan","grade":"Grade 8","subject":"Science"},{"name":"Heidi Kuchenbaur","grade":"Grade 6","subject":"Special Education"},{"name":"Michele Kelly","grade":"Grade 7","subject":"Special Education"},{"name":"Nicole Johnson","grade":"Grades 6-8","subject":"Counseling"},{"name":"Stephanie Williams","grade":"Grades 6-8","subject":"Counseling"},{"name":"Laura Pagington","grade":"Grade 8","subject":"Social Studies"},{"name":"Stephanie Boyle","grade":"K","subject":"Elementary education"},{"name":"Iva Sofronova","grade":"K","subject":"Elementary education"},{"name":"Caitlin Murray","grade":"K","subject":"Elementary education"},{"name":"Stephanie Barbosa","grade":"K","subject":"Elementary education"},{"name":"Lori DiPrima","grade":"1","subject":"Elementary education"},{"name":"Julia Chisholm","grade":"1","subject":"Elementary education"},{"name":"Jennifer Hubacz","grade":"1","subject":"Elementary education"},{"name":"Patrice Heffernan","grade":"1","subject":"Elementary education"},{"name":"Maura Feely","grade":"2","subject":"Elementary education"},{"name":"Carolyn Pokorney","grade":"2","subject":"Elementary education"},{"name":"Julie Aisenberg","grade":"2","subject":"Elementary education"},{"name":"Jessica Gilchrest","grade":"3","subject":"Elementary education"},{"name":"Sandy Bowles","grade":"3","subject":"Elementary education"},{"name":"Cindy Finan","grade":"3","subject":"Elementary education"},{"name":"Lori Troest","grade":"3","subject":"Elementary education"},{"name":"Jennifer Sigismondo","grade":"4","subject":"Elementary education"},{"name":"Linda Gothie","grade":"4","subject":"Elementary education"},{"name":"Melissa Walsh","grade":"4","subject":"Elementary education"},{"name":"Pam Carpenter","grade":"4","subject":"Elementary education"},{"name":"Meredith Renda","grade":"Grades K-5","subject":"Instructional Technology"},{"name":"Gregg Newton","grade":"Grades K-5","subject":"Physical Education"},{"name":"Jayne Richards","grade":"Grades K-5","subject":"Health"},{"name":"Mary Kate Winn","grade":"Grades 6-8","subject":"Health"},{"name":"Alissa Frederick","grade":"Grades K-5","subject":"Music, Vocal"},{"name":"Liz Scudiere","grade":"Grades K-5","subject":"Art"},{"name":"Neil Wilkins","grade":"Grades 6-8","subject":"Engineering"},{"name":"Mike Caligiuri","grade":"Grades K-5","subject":"Library/Media"},{"name":"Katie Salois","grade":"Grades K-5","subject":"Literacy"},{"name":"Liz West","grade":"Grades K-5","subject":"Literacy"},{"name":"Emily Richardi","grade":"Grades K-5","subject":"Literacy"},{"name":"Karen Suffin","grade":"Grades K-2","subject":"Literacy"},{"name":"Erin Walker","grade":"Grades K-2","subject":"Literacy"},{"name":"Kate Robinson","grade":"Grades K-2","subject":"Literacy"},{"name":"Kristin Lambert","grade":"Grades K-8","subject":"ELL/ESL"},{"name":"Emily Vinci","grade":"Grades K-5","subject":"Special Education"},{"name":"Kristin Diggins","grade":"Grades K-5","subject":"Special Education"},{"name":"Karen Fitzpatrick","grade":"Grades K-5","subject":"Special Education"},{"name":"Casey Taillon","grade":"Grades K-5","subject":"Special Education"},{"name":"Jane Barwick","grade":"Grades K-1","subject":"Special Education"},{"name":"Rebecca Charpentier","grade":"Grades 2-3","subject":"Special Education"},{"name":"Alicia Madden","grade":"Grade 2 and Grade 4","subject":"Special Education"},{"name":"Diane Kirby-LaChance","grade":"Grade 2 and Grade 4","subject":"Special Education"},{"name":"Kelly Davis","grade":"Grades K-8","subject":"BCBA"},{"name":"Audrey Ashe","grade":"Grades PK-2","subject":"Counseling"},{"name":"Evelyn Cubero","grade":"Grades K-5","subject":"Counseling"},{"name":"Stacy Southard","grade":"Grades K-5","subject":"Special Education"},{"name":"Nichole Alarie","grade":"Grade 1","subject":"Special Education"},{"name":"Brionni Spinazola","grade":"Grades K-5","subject":"Special Education"},{"name":"Emersyn Forde","grade":"Grade 2","subject":"Special Education"},{"name":"Kate Burke","grade":"Grades 6-8","subject":"Special Education"},{"name":"Jackie Plesca","grade":"Grades 6-8","subject":"Special Education"},{"name":"Chandra Ferraro","grade":"Grades PK-8","subject":"Administration"},{"name":"Lisa Cantin","grade":"Grades PK-8","subject":"Administration"},{"name":"Jen Dutile","grade":"","subject":"Administration"},{"name":"Kim Laster","grade":"","subject":"Administration"},{"name":"Karin Frostholm","grade":"","subject":"Nursing"},{"name":"Rebecca Carle","grade":"","subject":"Nursing"},{"name":"Jessica Davis","grade":"","subject":"Preschool"},{"name":"Angela Braaten","grade":"","subject":"Preschool"},{"name":"Emily Daelhousen","grade":"","subject":"Preschool"},{"name":"Dulce Hidalgo","grade":"","subject":"Elementary Education"},{"name":"Barbara Robichaud","grade":"","subject":"Elementary Education"},{"name":"Jake Wardwell","grade":"","subject":"Elementary Education"},{"name":"Colinda Samarjian","grade":"","subject":"Elementary Education"},{"name":"Sadia Afrin","grade":"","subject":"Elementary Education"},{"name":"Kelly Salloux","grade":"","subject":"Special Education"},{"name":"Cameryn LeShane","grade":"","subject":"Special Education"},{"name":"Georgia Mulvey","grade":"","subject":"Special Education"},{"name":"Crystal Sette","grade":"","subject":"Special Education"},{"name":"Nancy Lento","grade":"","subject":"Special Education"},{"name":"Steve Salka","grade":"","subject":"Special Education"},{"name":"Joan Bates","grade":"","subject":"Special Education"},{"name":"Stacia Downey","grade":"","subject":"Special Education"},{"name":"Kim Storey","grade":"","subject":"Special Education"},{"name":"Sandy Pagoaga","grade":"","subject":"Special Education"},{"name":"Jen Ssonko","grade":"","subject":"Special Education"},{"name":"Bethany Joinville","grade":"","subject":"Special Education"},{"name":"James Majok","grade":"","subject":"Facilities"},{"name":"Karen McNamara","grade":"","subject":"Facilities"},{"name":"Chris Roche","grade":"","subject":"Facilities"},{"name":"Paul Terra","grade":"","subject":"Facilities"},{"name":"Miguel Abreu","grade":"","subject":"Facilities"},{"name":"Jonathan Pino","grade":"","subject":"Facilities"},{"name":"Jennifer McGrath","grade":"","subject":"Nutrition"},{"name":"Monique LeBlanc","grade":"","subject":"Nutrition"},{"name":"Sandie Hawkins","grade":"","subject":"Nutrition"},{"name":"Shelly Herbst","grade":"","subject":"Nutrition"},{"name":"Margaret Tindall","grade":"","subject":"Nutrition"},{"name":"Claudia Pongratz","grade":"","subject":"Nutrition"},{"name":"Ed Pannini","grade":"","subject":"Nutrition"},{"name":"Michael Ellam","grade":"","subject":"Extended Learning"}];
+
+let visits = JSON.parse(localStorage.getItem('visits')||'[]');
+let interactions = JSON.parse(localStorage.getItem('interactions')||'[]');
+let roster = JSON.parse(localStorage.getItem('roster')||'null') || ROSTER;
+let mRatings = {lt:null,se:null,is:null,ce:null};
+let dRatings = {lt:null,se:null,is:null,ce:null};
+let mSelType = null, dSelType = null;
+
+// Init datetimes
+function nowEastern() {
+  const d = new Date();
+  // Format as YYYY-MM-DDTHH:MM in America/New_York
+  return d.toLocaleString('sv-SE', { timeZone: 'America/New_York' }).replace(' ','T').slice(0,16);
+}
+['m-f-datetime','m-i-datetime','d-f-datetime','d-i-datetime'].forEach(id => { const el=document.getElementById(id); if(el) el.value=nowEastern(); });
+
+// Rating buttons
+document.querySelectorAll('.rating-row').forEach(row => {
+  const field = row.dataset.field, prefix = row.dataset.prefix;
+  const ratingsObj = prefix==='m' ? mRatings : dRatings;
+  row.querySelectorAll('.rating-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      row.querySelectorAll('.rating-btn').forEach(b => b.className='rating-btn');
+      btn.classList.add('active');
+      ratingsObj[field] = btn.dataset.val;
+    });
+  });
+});
+
+// Type pills
+document.querySelectorAll('#m-type-pills .type-pill').forEach(p => p.addEventListener('click', ()=>{ document.querySelectorAll('#m-type-pills .type-pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); mSelType=p.dataset.val; }));
+document.querySelectorAll('#d-type-pills .type-pill').forEach(p => p.addEventListener('click', ()=>{ document.querySelectorAll('#d-type-pills .type-pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); dSelType=p.dataset.val; }));
+
+// Auto-fill from roster
+['m-f-teacher','d-f-teacher'].forEach(id => {
+  const el = document.getElementById(id);
+  if(!el) return;
+  const px = id.startsWith('m') ? 'm' : 'd';
+  el.addEventListener('change', function() {
+    const m = roster.find(r=>r.name.toLowerCase().trim()===this.value.toLowerCase().trim());
+    if(m) { document.getElementById(`${px}-f-grade`).value=m.grade||''; document.getElementById(`${px}-f-subject`).value=m.subject||''; }
+  });
+});
+
+// Mode toggle
+function setMode(mode, px) {
+  document.getElementById(`${px}-form-visit`).style.display = mode==='visit'?'':'none';
+  document.getElementById(`${px}-form-interaction`).style.display = mode==='interaction'?'':'none';
+  document.getElementById(`${px}-mode-visit-btn`).classList.toggle('active', mode==='visit');
+  document.getElementById(`${px}-mode-interaction-btn`).classList.toggle('active', mode==='interaction');
+}
+
+// Mobile nav
+function mobileNav(screen, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.mobile-screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('mscreen-'+screen).classList.remove('hidden');
+  if(screen==='staff') renderStaff(null,'m');
+  if(screen==='patterns') renderPatterns('m');
+}
+
+// Desktop tabs
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active','blue-tab'));
+  btn.classList.add('active');
+  if(tab==='interactions') btn.classList.add('blue-tab');
+  ['visits','interactions','staff','patterns'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
+  if(tab==='staff') renderStaff(null,'d');
+  if(tab==='patterns') renderPatterns('d');
+}
+
+// Roster
+function handleRosterFile(file, px) {
+  if(!file) return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='csv') { const r=new FileReader(); r.onload=e=>parseCSV(e.target.result,px); r.readAsText(file); }
+  else if(ext==='xlsx'||ext==='xls') { loadXLSX(file,px); }
+  else showRosterStatus(px,'error','Please upload a .csv or .xlsx file.');
+}
+function parseCSV(text,px) {
+  const lines=text.trim().split(/\r?\n/); if(lines.length<2){showRosterStatus(px,'error','File empty.');return;}
+  const h=lines[0].split(',').map(x=>x.trim().toLowerCase().replace(/[^a-z]/g,''));
+  const ni=h.findIndex(x=>x.includes('name')||x.includes('teacher')),gi=h.findIndex(x=>x.includes('grade')),si=h.findIndex(x=>x.includes('subject')||x.includes('content'));
+  if(ni<0){showRosterStatus(px,'error','No Name column found.');return;}
+  applyRoster(lines.slice(1).map(l=>{const c=l.split(',').map(x=>x.trim().replace(/^"|"$/g,''));return{name:c[ni]||'',grade:gi>=0?c[gi]:'',subject:si>=0?c[si]:''};}).filter(r=>r.name),px);
+}
+function loadXLSX(file,px) {
+  if(window.XLSX){doXLSX(file,px);return;}
+  const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>doXLSX(file,px);s.onerror=()=>showRosterStatus(px,'error','Could not load Excel parser.');document.head.appendChild(s);
+}
+function doXLSX(file,px) {
+  const r=new FileReader();r.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});applyRoster(rows.map(row=>{const k=Object.keys(row);const nk=k.find(x=>x.toLowerCase().includes('name')||x.toLowerCase().includes('teacher'));const gk=k.find(x=>x.toLowerCase().includes('grade'));const sk=k.find(x=>x.toLowerCase().includes('subject')||x.toLowerCase().includes('content'));return{name:nk?String(row[nk]).trim():'',grade:gk?String(row[gk]).trim():'',subject:sk?String(row[sk]).trim():''};}).filter(r=>r.name),px);}catch{showRosterStatus(px,'error','Could not read file.');}};r.readAsArrayBuffer(file);
+}
+function applyRoster(parsed,px) {
+  if(!parsed.length){showRosterStatus(px,'error','No names found.');return;}
+  roster=parsed;localStorage.setItem('roster',JSON.stringify(roster));
+  updateDatalist();updateRosterBadges();showRosterStatus(px,'success',`✓ ${parsed.length} staff loaded.`);renderAll();
+}
+function showRosterStatus(px,type,msg) {
+  ['m','d'].forEach(p=>{const el=document.getElementById(`${p}-roster-status`);if(!el)return;if(p===px){el.className='roster-status '+type;el.innerHTML=msg+(type==='success'?` <button class="roster-clear" onclick="resetRoster()">Reset</button>`:'')}});
+}
+function resetRoster() {
+  roster=ROSTER;localStorage.setItem('roster',JSON.stringify(roster));
+  updateDatalist();updateRosterBadges();
+  ['m','d'].forEach(p=>{const el=document.getElementById(`${p}-roster-status`);if(el){el.className='roster-status success';el.innerHTML=`✓ Restored (${ROSTER.length} staff). <button class="roster-clear" onclick="resetRoster()">Reset</button>`;}});
+  renderAll();
+}
+function updateRosterBadges() {
+  ['m','d'].forEach(p=>{const b=document.getElementById(`${p}-roster-badge`);if(b){b.textContent=roster.length+' staff';b.style.display='inline';}});
+}
+
+// Data
+function save() { localStorage.setItem('visits',JSON.stringify(visits)); localStorage.setItem('interactions',JSON.stringify(interactions)); updateStats(); updateDatalist(); syncToCloud(); }
+function updateStats() {
+  document.getElementById('stat-total').textContent=visits.length;
+  document.getElementById('stat-interactions').textContent=interactions.length;
+  const wa=Date.now()-7*86400000;
+  document.getElementById('stat-week').textContent=visits.filter(v=>new Date(v.datetime).getTime()>wa).length+interactions.filter(i=>new Date(i.datetime).getTime()>wa).length;
+}
+function updateDatalist() {
+  const dl=document.getElementById('staff-datalist');
+  const names=[...new Set([...roster.map(r=>r.name),...visits.map(v=>v.teacher),...interactions.map(i=>i.person)])].sort();
+  dl.innerHTML=names.map(n=>`<option value="${n}">`).join('');
+}
+
+// Log
+function logVisit(px) {
+  const teacher=document.getElementById(`${px}-f-teacher`).value.trim();
+  const datetime=document.getElementById(`${px}-f-datetime`).value;
+  if(!teacher||!datetime){showToast('Please add a teacher name and date/time.');return;}
+  const r = px==='m'?mRatings:dRatings;
+  visits.unshift({id:Date.now(),teacher,room:document.getElementById(`${px}-f-room`).value.trim(),datetime,grade:document.getElementById(`${px}-f-grade`).value,subject:document.getElementById(`${px}-f-subject`).value,notes:document.getElementById(`${px}-f-notes`).value.trim(),ratings:{...r}});
+  save();renderAll();showToast('✓ Visit logged — '+teacher);
+  [`${px}-f-teacher`,`${px}-f-room`,`${px}-f-notes`].forEach(id=>document.getElementById(id).value='');
+  document.getElementById(`${px}-f-grade`).value='';document.getElementById(`${px}-f-subject`).value='';
+  document.getElementById(`${px}-f-datetime`).value=nowEastern();
+  document.querySelectorAll(`[data-prefix="${px}"] .rating-btn`).forEach(b=>b.className='rating-btn');
+  if(px==='m') Object.keys(mRatings).forEach(k=>mRatings[k]=null);
+  else Object.keys(dRatings).forEach(k=>dRatings[k]=null);
+}
+function logInteraction(px) {
+  const person=document.getElementById(`${px}-i-person`).value.trim();
+  const datetime=document.getElementById(`${px}-i-datetime`).value;
+  if(!person||!datetime){showToast('Please add a name and date/time.');return;}
+  const type = px==='m'?mSelType:dSelType;
+  interactions.unshift({id:Date.now(),person,datetime,type:type||'Other',context:document.getElementById(`${px}-i-context`).value.trim(),notes:document.getElementById(`${px}-i-notes`).value.trim()});
+  save();renderAll();showToast('✓ Interaction logged — '+person);
+  [`${px}-i-person`,`${px}-i-context`,`${px}-i-notes`].forEach(id=>document.getElementById(id).value='');
+  document.getElementById(`${px}-i-datetime`).value=nowEastern();
+  document.querySelectorAll(`#${px}-type-pills .type-pill`).forEach(p=>p.classList.remove('active'));
+  if(px==='m') mSelType=null; else dSelType=null;
+}
+
+// Helpers
+function fmtDate(dt){return new Date(dt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function fmtTime(dt){return new Date(dt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+function ri(name){return roster.find(r=>r.name.toLowerCase().trim()===name.toLowerCase().trim());}
+function visitCardHTML(v,showTeacher=true){
+  const r=v.ratings;let tags='';
+  if(r.lt)tags+=`<span class="tag tag-lt">📌 LT: ${r.lt}</span>`;
+  if(r.se)tags+=`<span class="tag tag-se">👥 ${r.se}</span>`;
+  if(r.is)tags+=`<span class="tag tag-is">🎯 ${r.is}</span>`;
+  if(r.ce)tags+=`<span class="tag tag-ce">🏛 ${r.ce}</span>`;
+  return `<div class="visit-card"><button class="delete-btn" onclick="deleteVisit(${v.id})">✕</button>
+    <div class="visit-card-header"><div>${showTeacher?`<div class="visit-teacher">${v.teacher}</div>`:''}<div class="visit-meta">${[v.room,v.grade,v.subject].filter(Boolean).join(' · ')}</div></div><div class="visit-date-badge">${fmtDate(v.datetime)} · ${fmtTime(v.datetime)}</div></div>
+    ${tags?`<div class="visit-tags">${tags}</div>`:''}${v.notes?`<div class="visit-notes">${v.notes}</div>`:''}</div>`;
+}
+function interactionCardHTML(i,showName=true){
+  const re=ri(i.person);const meta=re?[re.grade,re.subject].filter(Boolean).join(' · '):'';
+  return `<div class="visit-card interaction-card"><button class="delete-btn" onclick="deleteInteraction(${i.id})">✕</button>
+    <div class="visit-card-header"><div>${showName?`<div class="visit-teacher">${i.person}</div>`:''}<div class="visit-meta">${meta}</div></div><div class="visit-date-badge ibadge">${fmtDate(i.datetime)} · ${fmtTime(i.datetime)}</div></div>
+    <div class="visit-tags"><span class="tag tag-type">💬 ${i.type}</span>${i.context?`<span class="tag tag-context">📍 ${i.context}</span>`:''}</div>
+    ${i.notes?`<div class="visit-notes">${i.notes}</div>`:''}</div>`;
+}
+
+// Render visits
+function renderVisits() {
+  ['m','d'].forEach(px=>{
+    const sl=document.getElementById(`${px}-search-visits`);const gl=document.getElementById(`${px}-filter-grade`);const subl=document.getElementById(`${px}-filter-subject`);
+    const s=sl?sl.value.toLowerCase():'';const g=gl?gl.value:'';const sub=subl?subl.value:'';
+    const f=visits.filter(v=>{if(g&&v.grade!==g)return false;if(sub&&v.subject!==sub)return false;if(s&&!v.teacher.toLowerCase().includes(s)&&!v.notes.toLowerCase().includes(s))return false;return true;});
+    const el=document.getElementById(`${px}-visits-list`);if(!el)return;
+    el.innerHTML=f.length?f.map(v=>visitCardHTML(v)).join(''):`<div class="empty-state"><div class="icon">📋</div><p>No visits yet.</p></div>`;
+  });
+}
+// Render interactions
+function renderInteractions() {
+  ['m','d'].forEach(px=>{
+    const sl=document.getElementById(`${px}-search-interactions`);const tl=document.getElementById(`${px}-filter-itype`);
+    const s=sl?sl.value.toLowerCase():'';const t=tl?tl.value:'';
+    const f=interactions.filter(i=>{if(t&&i.type!==t)return false;if(s&&!i.person.toLowerCase().includes(s)&&!i.notes.toLowerCase().includes(s))return false;return true;});
+    const el=document.getElementById(`${px}-interactions-list`);if(!el)return;
+    el.innerHTML=f.length?f.map(i=>interactionCardHTML(i)).join(''):`<div class="empty-state"><div class="icon">💬</div><p>No interactions logged yet.</p></div>`;
+  });
+}
+// Render staff
+function renderStaff(selected, px) {
+  const container=document.getElementById(`${px}-staff-view`);if(!container)return;
+  const vm={},im={};
+  visits.forEach(v=>{if(!vm[v.teacher])vm[v.teacher]=[];vm[v.teacher].push(v);});
+  interactions.forEach(i=>{if(!im[i.person])im[i.person]=[];im[i.person].push(i);});
+  if(selected){
+    const vs=(vm[selected]||[]).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));
+    const is=(im[selected]||[]).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));
+    const re=ri(selected);const meta=re?[re.grade,re.subject].filter(Boolean).join(' · '):'';
+    container.innerHTML=`<div class="detail-header"><button class="back-btn" onclick="renderStaff(null,'${px}')">← Back</button>
+      <div><span style="font-family:'DM Serif Display',serif;font-size:1.08rem;">${selected}</span>${meta?`<span style="color:var(--ink-light);font-size:0.74rem;margin-left:8px;">${meta}</span>`:''}</div></div>
+      ${vs.length?`<div class="section-sub" style="margin-bottom:9px;">Classroom Visits (${vs.length})</div><div class="visits-list" style="margin-bottom:18px;">${vs.map(v=>visitCardHTML(v,false)).join('')}</div>`:'<p style="font-size:0.8rem;color:var(--ink-light);margin-bottom:16px;">No classroom visits logged yet.</p>'}
+      ${is.length?`<div class="section-sub blue" style="margin-bottom:9px;">Interactions (${is.length})</div><div class="visits-list">${is.map(i=>interactionCardHTML(i,false)).join('')}</div>`:''}`;
+    return;
+  }
+  const allNames=[...new Set([...roster.map(r=>r.name),...Object.keys(vm),...Object.keys(im)])];
+  if(!allNames.length){container.innerHTML=`<div class="empty-state"><div class="icon">👩‍🏫</div><p>No staff yet.</p></div>`;return;}
+  const maxV=Math.max(...allNames.map(n=>(vm[n]||[]).length),1);
+  const sorted=allNames.sort((a,b)=>(vm[b]||[]).length-(vm[a]||[]).length);
+  container.innerHTML=`<div class="teacher-grid">`+sorted.map(name=>{
+    const vs=vm[name]||[],is=im[name]||[],re=ri(name);
+    const info=re?[re.grade,re.subject].filter(Boolean).join(' · '):'';
+    const lastV=vs.length?new Date(vs.sort((a,b)=>new Date(b.datetime)-new Date(a.datetime))[0].datetime):null;
+    const lastI=is.length?new Date(is.sort((a,b)=>new Date(b.datetime)-new Date(a.datetime))[0].datetime):null;
+    const lastAny=lastV&&lastI?(lastV>lastI?lastV:lastI):(lastV||lastI);
+    const pct=(vs.length/maxV)*100,cc=vs.length===0?'low':vs.length<3?'mid':'';
+    const nv=vs.length===0?`<span style="font-size:0.58rem;background:var(--accent-light);color:var(--accent);padding:2px 5px;border-radius:8px;font-weight:600;">Not visited</span>`:'';
+    const ib=is.length?`<span style="font-size:0.58rem;background:var(--blue-light);color:var(--blue);padding:2px 5px;border-radius:8px;font-weight:600;">${is.length}i</span>`:'';
+    return `<div class="teacher-card" onclick="renderStaff('${name.replace(/'/g,"\\'")}','${px}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:3px;margin-bottom:3px;"><div class="teacher-name">${name}</div><div style="display:flex;gap:2px;flex-shrink:0;">${nv}${ib}</div></div>
+      <div class="teacher-info">${info||'Staff'}</div>
+      <div class="visit-count-bar"><div class="visit-count-fill ${cc}" style="width:${pct}%"></div></div>
+      <div class="last-visit">${vs.length} visit${vs.length!==1?'s':''} · ${lastAny?lastAny.toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—'}</div></div>`;
+  }).join('')+`</div>`;
+}
+// Render patterns
+function renderPatterns(px) {
+  const container=document.getElementById(`${px}-patterns-content`);if(!container)return;
+  if(!visits.length&&!interactions.length){container.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">📊</div><p>Log visits or interactions to see patterns.</p></div>`;return;}
+  const gc={},sc={},ltC={Yes:0,Partial:0,No:0},seC={High:0,Mid:0,Low:0},tC={};
+  visits.forEach(v=>{if(v.grade)gc[v.grade]=(gc[v.grade]||0)+1;if(v.subject)sc[v.subject]=(sc[v.subject]||0)+1;if(v.ratings.lt)ltC[v.ratings.lt]=(ltC[v.ratings.lt]||0)+1;if(v.ratings.se)seC[v.ratings.se]=(seC[v.ratings.se]||0)+1;});
+  interactions.forEach(i=>{tC[i.type]=(tC[i.type]||0)+1;});
+  const visitedSet=new Set(visits.map(v=>v.teacher.toLowerCase().trim()));
+  const unvisited=roster.filter(r=>!visitedSet.has(r.name.toLowerCase().trim())).map(r=>r.name);
+  const im={};interactions.forEach(i=>{if(!im[i.person])im[i.person]=[];im[i.person].push(i);});
+  const mxG=Math.max(...Object.values(gc),1),mxS=Math.max(...Object.values(sc),1),mxT=Math.max(...Object.values(tC),1);
+  const cols=['#c84b31','#d4a017','#2d6a4f','#2040a0','#8040a0','#c84b31','#d4a017','#2d6a4f','#2040a0'];
+  const ltT=Object.values(ltC).reduce((a,b)=>a+b,0)||1,seT=Object.values(seC).reduce((a,b)=>a+b,0)||1;
+  const gr=Object.entries(gc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([g,c],i)=>`<div class="bar-row"><div class="bar-label" title="${g}">${g}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(c/mxG*100).toFixed(0)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-val">${c}</div></div>`).join('');
+  const sr=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([s,c],i)=>`<div class="bar-row"><div class="bar-label" title="${s}">${s}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(c/mxS*100).toFixed(0)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-val">${c}</div></div>`).join('');
+  const tr=Object.entries(tC).sort((a,b)=>b[1]-a[1]).map(([t,c],i)=>`<div class="bar-row"><div class="bar-label" title="${t}">${t}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(c/mxT*100).toFixed(0)}%;background:${cols[i%cols.length]}"></div></div><div class="bar-val">${c}</div></div>`).join('');
+  const od=unvisited.slice(0,14).map(name=>{const ic=(im[name]||[]).length;return `<div class="overdue-item"><span>${name}</span><span class="overdue-days">No visit${ic?` · ${ic}i`:''}</span></div>`;}).join('');
+  container.innerHTML=`
+    <div class="pattern-card"><h3>By Grade</h3>${gr||'<p style="color:var(--ink-light);font-size:0.8rem;">No data yet.</p>'}</div>
+    <div class="pattern-card"><h3>By Subject</h3>${sr||'<p style="color:var(--ink-light);font-size:0.8rem;">No data yet.</p>'}</div>
+    <div class="pattern-card"><h3>Observations &amp; Interactions</h3>
+      <p style="font-size:0.64rem;color:var(--ink-light);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Learning Target</p>
+      <div class="bar-row"><div class="bar-label">Yes</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ltC.Yes/ltT*100).toFixed(0)}%;background:var(--green)"></div></div><div class="bar-val">${ltC.Yes}</div></div>
+      <div class="bar-row"><div class="bar-label">Partial</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ltC.Partial/ltT*100).toFixed(0)}%;background:var(--gold)"></div></div><div class="bar-val">${ltC.Partial}</div></div>
+      <div class="bar-row"><div class="bar-label">No</div><div class="bar-wrap"><div class="bar-fill" style="width:${(ltC.No/ltT*100).toFixed(0)}%;background:var(--accent)"></div></div><div class="bar-val">${ltC.No}</div></div>
+      <p style="font-size:0.64rem;color:var(--ink-light);margin:12px 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Engagement</p>
+      <div class="bar-row"><div class="bar-label">High</div><div class="bar-wrap"><div class="bar-fill" style="width:${(seC.High/seT*100).toFixed(0)}%;background:var(--green)"></div></div><div class="bar-val">${seC.High}</div></div>
+      <div class="bar-row"><div class="bar-label">Mid</div><div class="bar-wrap"><div class="bar-fill" style="width:${(seC.Mid/seT*100).toFixed(0)}%;background:var(--gold)"></div></div><div class="bar-val">${seC.Mid}</div></div>
+      <div class="bar-row"><div class="bar-label">Low</div><div class="bar-wrap"><div class="bar-fill" style="width:${(seC.Low/seT*100).toFixed(0)}%;background:var(--accent)"></div></div><div class="bar-val">${seC.Low}</div></div>
+      ${tr?`<p style="font-size:0.64rem;color:var(--ink-light);margin:12px 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Interaction Types</p>${tr}`:''}
+    </div>
+    <div class="pattern-card"><h3>Not Yet Visited <span style="font-size:0.72rem;font-family:'DM Sans',sans-serif;color:var(--ink-light);font-weight:400;">(${unvisited.length} of ${roster.length})</span></h3>
+      ${unvisited.length?`<div class="overdue-list">${od}${unvisited.length>14?`<div style="font-size:0.7rem;color:var(--ink-light);padding:5px 10px;">…and ${unvisited.length-14} more</div>`:''}</div>`:`<p style="color:var(--green);font-size:0.8rem;">✓ All ${roster.length} staff visited!</p>`}
+    </div>`;
+}
+
+function deleteVisit(id){visits=visits.filter(v=>v.id!==id);save();renderAll();showToast('Visit removed.');}
+function deleteInteraction(id){interactions=interactions.filter(i=>i.id!==id);save();renderAll();showToast('Interaction removed.');}
+
+function renderAll(){renderVisits();renderInteractions();renderStaff(null,'m');renderStaff(null,'d');renderPatterns('m');renderPatterns('d');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// Init
+localStorage.setItem('roster', JSON.stringify(roster));
+updateStats();updateDatalist();updateRosterBadges();
+['m','d'].forEach(px=>{const el=document.getElementById(`${px}-roster-status`);if(el){el.className='roster-status success';el.innerHTML=`✓ ${roster.length} staff loaded. <button class="roster-clear" onclick="resetRoster()">Reset</button>`;}});
+renderAll();
+syncFromCloud();
+</script>
+</body>
+</html>
